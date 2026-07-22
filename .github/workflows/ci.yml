@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  kit-checks:
+    name: Enforce the kit's own invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck ripgrep fd-find jq
+          mkdir -p "$HOME/.local/bin"
+          ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Shellcheck all scripts
+        run: shellcheck scripts/*.sh templates/skills/*.sh
+
+      - name: Regenerate the sandbox fixture
+        run: ./scripts/seed-sandbox.sh
+
+      - name: Sandbox must not drift (regenerate == committed)
+        run: git diff --exit-code reference/sandbox
+
+      - name: Validate the sandbox workspace
+        run: ./scripts/validate-workspace.sh reference/sandbox

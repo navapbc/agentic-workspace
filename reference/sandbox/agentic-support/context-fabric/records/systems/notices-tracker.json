@@ -1,0 +1,13 @@
+{
+  "kind": "systemResource",
+  "id": "system:notices-tracker",
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-07-22T00:00:00Z",
+  "name": "Notices Tracker (fictional Jira)",
+  "description": "Work tracker where BN issues live.",
+  "interfaces": [
+    { "type": "issue-tracker", "url": "https://tracker.example.gov/projects/BN" }
+  ],
+  "provenance": { "source": "sandbox seed", "addedBy": "kit" },
+  "validation": { "validatedBy": "kit", "validatedAt": "2026-07-22T00:00:00Z" }
+}

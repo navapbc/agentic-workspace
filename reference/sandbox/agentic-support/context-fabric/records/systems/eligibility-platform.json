@@ -1,0 +1,13 @@
+{
+  "kind": "systemResource",
+  "id": "system:eligibility-platform",
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-07-22T00:00:00Z",
+  "name": "Eligibility Platform (fictional)",
+  "description": "Upstream system that emits beneficiary eligibility determinations BN reacts to.",
+  "interfaces": [
+    { "type": "api", "url": "https://eligibility.example.gov/api" }
+  ],
+  "provenance": { "source": "sandbox seed", "addedBy": "kit" },
+  "validation": { "validatedBy": "kit", "validatedAt": "2026-07-22T00:00:00Z" }
+}

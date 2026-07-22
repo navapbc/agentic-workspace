@@ -1,0 +1,36 @@
+# {{WORKSPACE_NAME}} -- Agent Instructions
+
+<!--
+  This is the ROOT guidance file for a shared agentic workspace.
+  Keep it THIN: boundaries, routing, and exceptions only.
+  Do NOT copy procedures or shared facts here. Reference the support layer instead.
+  For Claude Code users, add a CLAUDE.md next to this file containing just: @AGENTS.md
+  (Claude Code reads CLAUDE.md, not AGENTS.md; the import means nothing to keep in sync.)
+-->
+
+Scope: {{ONE_LINE_SCOPE — e.g. "Shared product workspace for the <team/product>, Nava-primary."}}
+
+## Boundaries
+
+- {{What belongs here.}}
+- Do not add code checkouts, credentials, `.env` files, `op://` URIs, tokens, or OS metadata to this workspace. Cloned repos live outside it and are referenced by path.
+- {{Any material that needs review before sharing — e.g. client-sensitive, internal-only. Ask before moving, summarizing, or sharing it.}}
+- Nearest, most-specific `AGENTS.md` wins for local decisions, unless it conflicts with this authority boundary.
+
+## Layout
+
+- `canonical/` — reviewed, source-of-truth product work. One folder per product area; each declares one Context Fabric profile.
+- `prototyping/` — spikes, mockups, and experiments. Pre-review, no assigned profile.
+- `agentic-support/` — the support layer: reusable skills and shared context. (Add at Walk phase.)
+
+## Where things live
+
+- Reusable procedures: `agentic-support/skills/<name>/SKILL.md` (canonical). Do not duplicate them in product folders.
+- Shared facts (systems, repos, product profiles): `agentic-support/context-fabric/`.
+- Do not create generic root-level document lanes. Route work to the owning product area or to prototyping.
+
+## Conventions
+
+- Every markdown doc carries YAML front matter (`purpose`, `audience`, `status`, `last_updated`).
+- Writing style: lead with the answer, no em dashes, actionable over descriptive.
+- {{Product vocabulary an agent must not guess at — acronyms, system names, stable identifiers. Keep this short; move large glossaries to a referenced doc.}}

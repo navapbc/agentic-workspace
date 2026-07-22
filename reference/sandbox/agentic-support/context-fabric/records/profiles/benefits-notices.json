@@ -1,0 +1,36 @@
+{
+  "kind": "productProfile",
+  "id": "product:benefits-notices",
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-07-22T00:00:00Z",
+  "name": "Benefits Notices",
+  "description": "Designs and ships outbound beneficiary notices.",
+  "aliases": ["bn", "notices"],
+  "maintainers": [ { "name": "Priya Anand (fictional)", "role": "product steward" } ],
+  "systems": [
+    { "systemId": "system:notices-tracker", "anchors": [ { "type": "jira-project", "value": "BN" } ] },
+    { "systemId": "system:eligibility-platform", "anchors": [] }
+  ],
+  "repositories": [
+    {
+      "resourceId": "repository:example-gov/bn-notice-service",
+      "alias": "notice-service",
+      "selectionTier": "primary",
+      "coverage": "direct",
+      "useWhen": "Any task about notice content, layout, or delivery logic."
+    },
+    {
+      "resourceId": "repository:example-gov/eligibility-events",
+      "alias": "eligibility-contract",
+      "selectionTier": "supporting",
+      "coverage": "reference",
+      "useWhen": "When a notice depends on the shape of an upstream determination event."
+    }
+  ],
+  "taskGuidance": {
+    "synthesisBelongsIn": "canonical/benefits-notices/docs",
+    "notes": "Deliverables and research for BN go under the product area's docs lanes."
+  },
+  "provenance": { "source": "sandbox seed", "addedBy": "kit" },
+  "validation": { "validatedBy": "kit", "validatedAt": "2026-07-22T00:00:00Z" }
+}

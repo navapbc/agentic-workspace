@@ -1,0 +1,30 @@
+# {{WORKSPACE_NAME}}
+
+{{One or two sentences: what this workspace is for and who shares it.}}
+
+This is a shared agentic product workspace, stood up from Nava's Agentic Workspace Starter Kit. It gives the team and their agents shared context, boundaries, and reusable procedures.
+
+## Getting started (new teammate)
+
+1. Get the workspace onto your machine (git clone or Drive sync — see the team's chosen method below).
+2. Install dependencies for the current phase (see the kit's `docs/local-setup.md`).
+3. Point your agent tool at this folder (Claude Code reads `CLAUDE.md`; OpenCode/Codex/Cursor read `AGENTS.md`).
+4. If `agentic-support/skills/` exists, run the skill sync script once.
+5. Copy `bindings.env.template` to `bindings.env` and set your local paths.
+6. Ask your agent to read the root `AGENTS.md` and the product area you're working in.
+
+## Layout
+
+- `canonical/` — reviewed, source-of-truth product work.
+- `prototyping/` — spikes and experiments.
+- `agentic-support/` — shared skills and Context Fabric (Walk phase and up).
+- `docs/` — standard lanes: `ideation/`, `plans/`, `solutions/`.
+
+Directory names follow lowercase kebab-case. See the kit's `docs/directory-and-naming-standard.md`.
+
+## Team decisions
+
+- **Phase:** {{Crawl | Walk | Run}}
+- **Sharing:** {{Google Drive | git}}
+- **Stewards:** {{name per product area}}
+- **Harnesses in use:** {{Claude Code, Codex, OpenCode, ...}}

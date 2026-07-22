@@ -16,7 +16,7 @@ Workspaces stood up from this kit must never contain:
 
 If you find a secret, credential, or other sensitive content committed to this repo — or a template/script that could lead someone to leak one — please report it privately rather than opening a public issue:
 
-> **[INSERT A MONITORED CONTACT before publishing — e.g., open-source@navapbc.com or a private security advisory on this repo]**
+> **joseoyola@navapbc.com** — or open a private security advisory on this repo.
 
 Please include the file path and a short description. We'll acknowledge and remediate promptly.
 

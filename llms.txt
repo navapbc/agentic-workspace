@@ -1,0 +1,35 @@
+# Agentic Workspace Starter Kit
+
+> A kit for standing up shared, agentic product workspaces: one place where a team and their agents share context, boundaries, vocabulary, and reusable procedures. Harness-agnostic and model-agnostic. Plain markdown, JSON, and shell.
+
+## Start here
+
+- [AGENTS.md](AGENTS.md): canonical agent instructions for working in this kit (Claude Code reads CLAUDE.md, which imports AGENTS.md).
+- [START-HERE.md](START-HERE.md): the operating model in plain language and how to adopt it.
+- [README.md](README.md): human-facing overview and quickstart.
+
+## Docs
+
+- [docs/architecture.md](docs/architecture.md): three-layer model and the authority chain.
+- [docs/phased-adoption.md](docs/phased-adoption.md): Crawl / Walk / Run adoption path.
+- [docs/local-setup.md](docs/local-setup.md): harness- and model-agnostic setup.
+- [docs/harness-and-model-agnostic.md](docs/harness-and-model-agnostic.md): why the kit stays portable.
+- [docs/collaboration-and-governance.md](docs/collaboration-and-governance.md): canonical vs. prototype, stewardship, sharing.
+- [docs/context-fabric.md](docs/context-fabric.md): the shared-context catalog.
+- [docs/directory-and-naming-standard.md](docs/directory-and-naming-standard.md): kebab-case directory rule.
+- [docs/glossary.md](docs/glossary.md): shared vocabulary.
+
+## Templates and scripts
+
+- [templates/workspace/](templates/workspace/): copy-to-create workspace scaffold.
+- [templates/skills/](templates/skills/): portable skill bundle + sync script.
+- [templates/context-fabric/](templates/context-fabric/): Context Fabric record templates.
+- [scripts/new-workspace.sh](scripts/new-workspace.sh): scaffold a new workspace.
+- [scripts/validate-workspace.sh](scripts/validate-workspace.sh): check a workspace's invariants.
+- [scripts/seed-sandbox.sh](scripts/seed-sandbox.sh): regenerate the example sandbox.
+
+## Examples
+
+- [reference/sandbox/](reference/sandbox/): a fully populated, fictional workspace to trial.
+- [reference/example-walkthrough.md](reference/example-walkthrough.md): a fictional team adopting the kit end to end.
+- [reference/reference-implementation.md](reference/reference-implementation.md): how the model maps onto a mature deployment.

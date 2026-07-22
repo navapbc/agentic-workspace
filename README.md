@@ -1,8 +1,25 @@
 # Agentic Workspace Starter Kit
 
-A starter kit for Nava product managers to stand up a **shared, agentic product workspace**: a place where a group of PMs (and the agents they work with) share the same context, boundaries, vocabulary, and reusable procedures for the products they own together.
+[![CI](https://github.com/navapbc/agentic-workspace/actions/workflows/ci.yml/badge.svg)](https://github.com/navapbc/agentic-workspace/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-0.1.0-informational)
+
+A starter kit for product managers to stand up a **shared, agentic product workspace**: a place where a group of PMs (and the agents they work with) share the same context, boundaries, vocabulary, and reusable procedures for the products they own together.
 
 This kit generalizes an operating model proven on a mature internal deployment so any product team can adopt it without rebuilding the architecture from scratch. It is **harness-agnostic** (works with Claude Code, Codex, OpenCode, Cursor, and future tools) and **model-agnostic** (nothing here depends on a specific model).
+
+## Quickstart
+
+```bash
+git clone https://github.com/navapbc/agentic-workspace.git
+cd agentic-workspace
+# Read the entry point, then scaffold your own workspace anywhere:
+./scripts/new-workspace.sh --name "my-product-workspace"
+```
+
+Then open your new workspace in your agent tool and ask it to read the root `AGENTS.md`. See [START-HERE.md](START-HERE.md) for the full flow.
+
+**For agents:** the entry instructions live in [`AGENTS.md`](AGENTS.md) (Claude Code reads [`CLAUDE.md`](CLAUDE.md), which imports it). A machine-readable index is in [`llms.txt`](llms.txt).
 
 ---
 
@@ -27,7 +44,7 @@ You do **not** need to be an engineer. You do not need to know the Context Fabri
 
 If you only read one thing, read [START-HERE.md](START-HERE.md).
 
-**Visual overview:** a one-page, shareable anatomy of the kit is published at https://claude.ai/code/artifact/5d730c6a-27db-4f97-baa5-d868ba4d7c03 (source: [reference/anatomy.html](reference/anatomy.html); redeploys from that file). Good for socializing the kit with teammates and stakeholders.
+**Visual overview:** a one-page anatomy of the kit is in [reference/anatomy.html](reference/anatomy.html) — open it locally in a browser. Good for socializing the kit with teammates and stakeholders.
 
 ---
 

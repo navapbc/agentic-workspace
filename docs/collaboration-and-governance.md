@@ -1,5 +1,5 @@
 ---
-purpose: How multiple PMs share a workspace safely. Canonical vs. prototype, the review gate, stewardship, and git-vs-Drive sharing.
+purpose: How multiple PMs share a workspace safely. The two lanes, optional review and ownership practices, and how to set up git or Google Drive sharing.
 audience: PMs setting up multi-person collaboration in a shared agentic workspace.
 status: Active.
 last_updated: 2026-07-22
@@ -7,55 +7,42 @@ last_updated: 2026-07-22
 
 # Collaboration and Governance
 
-A shared workspace only stays trustworthy if everyone knows what is reviewed and safe to rely on, who owns each product area, and how the workspace is shared. This page defines all three.
+A shared workspace stays trustworthy when teammates know three things: where finished-enough work lives versus experiments, how the workspace is shared, and (if the team wants it) who reviews or owns what. This page covers all three. The safety invariants at the bottom are mandatory; everything else is a choice your team makes and writes down.
 
 ---
 
 ## The two lanes
 
-Every workspace splits product work into two lanes, governed by a short root charter (the root `AGENTS.md`):
+Every workspace splits product work into two lanes:
 
-| | Canonical | Prototyping |
+| | Product work | Prototyping |
 |---|---|---|
-| Location | `canonical/` (or `product-work/`) | `prototyping/` (or `local-solutions-prototyping/`) |
-| Status | Reviewed, source-of-truth, shareable **after human review** | Exploratory, pre-review |
-| Context Fabric | Each area declares one `product:` profile | No assigned profile; borrows the canonical catalog |
+| Location | `product-work/` (rename to suit your team) | `prototyping/` |
+| Intent | Work the team relies on and shares | Exploratory, in-progress, throwaway |
+| Context Fabric | Each area declares one `product:` profile | No assigned profile; borrows the product-work catalog |
 | Contents | Strategy, deliverables, reference, extractions | Spikes, mockups, runnable experiments, `.pen` files |
-| Extra lanes | Standard Docs lanes only | May use `docs/brainstorms/`, `docs/prototypes/`, apps |
+| Extra lanes | The team's chosen docs lanes | May also use `brainstorms/`, `prototypes/`, apps |
 
-The lanes are the spine of the model. Keeping them separate is what lets a team move fast in prototyping without polluting the source of truth.
-
----
-
-## What makes something "canonical"
-
-Canonical is defined by **lane + review gate + named steward**, not by location alone:
-
-1. It lives in the canonical lane.
-2. It has passed **human review** (a peer or lead outside the immediate work).
-3. It has a named steward who owns that area.
-
-Until all three hold, treat an artifact as draft, even if it sits in the canonical folder. Say so explicitly in the file's frontmatter (`status:`).
-
-### Promotion from prototype to canonical
-Promotion is an intentional, gated step. When a prototype concept becomes a real product area, run the product-area onboarding flow (a skill at Run phase, or the checklist in [phased-adoption.md](phased-adoption.md)): create the canonical folder, write its thin `AGENTS.md`, create its Context Fabric profile, assign a steward, and move only the intended artifacts. Do not treat the prototyping folder as a source of truth.
+The lanes are the spine of the model. Keeping them separate is what lets a team move fast in prototyping without muddying the work everyone depends on. The distinction is **location and intent** — "is this something the team relies on, or something I'm still figuring out?" — not a formal certification. Name the lanes whatever your team prefers; just keep the split.
 
 ---
 
-## Stewardship
+## Optional: review, ownership, and status
 
-- **One steward per product area.** Recorded in the profile's `maintainers` (with `role: product steward`) and in a stewardship summary table at the product-work root.
-- **Stewards own their sections.** They keep the area's `AGENTS.md`, profile, and canonical artifacts current, and are the human review gate for their area.
-- **Domain review panels** where correctness matters. Two forms:
-  - *Expert review panel*: 5-6 role personas (with priorities and challenge patterns) that an agent can adopt sequentially to critique an artifact, plus human advisors for high-stakes work.
-  - *Representative user panel*: personas standing in for the people who will live with the product.
-  Disagreements between personas surface real trade-offs. This mirrors the Make-or-Buy expert-panel pattern.
+How much process to attach to the product-work lane is a **team choice**. A two-person Crawl team may need none of this; a large multi-product team at Run usually wants some. Adopt only what earns its keep, and record what you chose in the workspace `README.md`.
+
+- **Review before sharing.** Some teams have a peer or lead look at product-work artifacts before they are relied on or shared outside the team. Useful where correctness matters (policy, compliance, external-facing content); overkill for internal working notes. Decide per team, or per artifact type.
+- **Named owners.** Assigning one person per product area (recorded in the profile's `maintainers` and, if you like, a summary table at the product-work root) helps a bigger team know who keeps an area current. A small team can skip it.
+- **Status labels.** If it helps readers tell a draft from settled work, add a `status:` line to a doc's front matter (`draft` / `active`, or your own vocabulary). This is a convenience, not a requirement — do not gate work on labeling every file.
+- **Review personas** (optional, for high-stakes work). An agent can critique an artifact from a few role angles (for example plain-language, accessibility, policy-accuracy) before a human signs off.
+
+Promotion from prototyping to product work is an intentional move, not a drag-and-drop: create the product-area folder, write its thin `AGENTS.md`, create its Context Fabric profile, and move only the intended artifacts. Whatever review or ownership practices your team adopts apply at that point.
 
 ---
 
 ## Sharing mechanism: git vs. Google Drive
 
-Decide this per team and per phase, and write it down. **Do not wire up both halfway** — a common source of drift.
+Decide this per team and per phase, and write it down. **Do not wire up both halfway** — that is a common source of drift.
 
 | | Google Drive | Git |
 |---|---|---|
@@ -73,6 +60,45 @@ Decide this per team and per phase, and write it down. **Do not wire up both hal
 
 Whichever you choose, the safety invariants below are mandatory.
 
+### Setting up Google Drive sharing
+
+The goal is that every teammate has the *same workspace folder* available as a real local path their agent tool can read, kept in sync automatically.
+
+**1. Create the workspace on a Shared Drive, not a personal My Drive.** A Shared Drive is owned by the team, so the workspace survives anyone leaving. In Google Drive, create (or ask an admin for) a Shared Drive such as `Agentic Workspaces`, then a folder inside it for this workspace, e.g. `benefits-notices-workspace/`.
+
+**2. Put the workspace at the root of that folder.** The folder's contents are the workspace root — the same layout `new-workspace.sh` produces:
+
+```
+benefits-notices-workspace/        <- the Shared Drive folder = workspace root
+├─ AGENTS.md
+├─ CLAUDE.md                        (one line: @AGENTS.md)
+├─ README.md
+├─ bindings.env.template            (commit the template only, never a filled-in bindings.env)
+├─ product-work/
+├─ prototyping/
+├─ docs/
+└─ agentic-support/                 (Walk phase and up)
+```
+
+Scaffold locally first, then move the folder into the Shared Drive (or run `new-workspace.sh --dir` pointed at your synced Drive path). Do not scaffold two copies.
+
+**3. Each teammate installs Google Drive for Desktop and adds the Shared Drive.** This gives them a local path like `~/Library/CloudStorage/GoogleDrive-you@nava/Shared drives/Agentic Workspaces/benefits-notices-workspace` (macOS) or `G:\Shared drives\...` (Windows).
+
+**4. Make the workspace available offline (mirrored), not stream-only.** Agent tools need to read real files, not on-demand placeholders. In Drive for Desktop, set the workspace folder to **Available offline** (right-click → Offline access → Available offline) so it is mirrored to disk.
+
+**5. Point the harness and bindings at that local path.** Open the synced folder in your agent tool (see [local-setup.md](local-setup.md)). Copy `bindings.env.template` to `bindings.env` and set `WORKSPACE_ROOT` to your machine's Drive path. `bindings.env` is per-machine — never commit it into the shared folder.
+
+**6. Use the `@AGENTS.md` import for `CLAUDE.md`, not a symlink.** Symlinks do not survive Drive sync or Windows; the one-line `@AGENTS.md` import does. `new-workspace.sh` already creates it this way.
+
+**Drive gotchas:**
+- Simultaneous edits to the same file surface as duplicate "conflicted copy" files, not a merge. Coordinate edits to shared files, or move the support layer to git.
+- `.DS_Store` and `Icon` files can appear; the safety invariants forbid them and `validate-workspace.sh` catches them.
+- There is no history or CI. If you need either, put that part of the workspace in git.
+
+### Setting up git sharing
+
+Initialize the workspace (or just the support layer) as a git repo, push it to your team's host, and have each teammate clone it to a local path outside any cloud-synced folder. Point the harness and `bindings.env` at the clone. At Run phase, add `scripts/validate-workspace.sh` as a CI check so the invariants are enforced on every change. Keep code checkouts out of the repo — reference them by path via bindings.
+
 ---
 
 ## Safety invariants (never negotiable)
@@ -87,10 +113,12 @@ These hold in every lane, on every machine, under any sharing mechanism. `script
 
 ---
 
-## Review checklist before you share anything canonical
+## A quick check before you share product work
 
-- [ ] It's in the canonical lane and its frontmatter `status:` reflects reality.
-- [ ] A human other than the author has reviewed it.
-- [ ] It contains no credentials, no absolute paths, no client-sensitive material that isn't cleared.
+Not a required gate — a short sanity pass:
+
+- [ ] It's in the product-work lane, and any status label you use reflects reality.
+- [ ] If your team reviews before sharing, that has happened.
+- [ ] It contains no credentials, no absolute paths, and no client-sensitive material that isn't cleared.
 - [ ] It references shared facts (Context Fabric, skills) rather than restating them.
 - [ ] `validate-workspace.sh` passes (Walk/Run).

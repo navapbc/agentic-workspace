@@ -11,14 +11,14 @@ beneficiary notices (eligibility determinations, appeal rights, renewals).
 
 1. Open this folder in your agent tool (Claude Code reads `CLAUDE.md`; Codex/OpenCode/Cursor read `AGENTS.md`).
 2. Ask your agent: "Read the root AGENTS.md and tell me the boundaries and vocabulary for this workspace."
-3. Look at `canonical/benefits-notices/AGENTS.md` — note the one-line Context Fabric profile declaration.
+3. Look at `product-work/benefits-notices/AGENTS.md` — note the one-line Context Fabric profile declaration.
 4. Open `agentic-support/context-fabric/records/profiles/benefits-notices.json` — the shared facts an agent resolves.
 5. Read the skill at `agentic-support/skills/notice-change-brief/SKILL.md`, then ask your agent to run it.
 6. From this folder, run the kit's validator: `../../scripts/validate-workspace.sh .`
 
 ## Layout
 
-- `canonical/benefits-notices/` — the (fictional) product area, declaring its Context Fabric profile.
+- `product-work/benefits-notices/` — the (fictional) product area, declaring its Context Fabric profile.
 - `prototyping/` — empty; where spikes would go.
 - `agentic-support/` — one skill (`notice-change-brief`) and a small Context Fabric (one system, two repos, one profile).
-- `docs/` — standard lanes, with one sample plan and one sample solution.
+- `docs/` — suggested lanes, with one sample plan and one sample solution.

@@ -12,7 +12,7 @@ argument-hint: "[{{what the user passes, if anything}}]"
 # {{Skill Name}}
 
 <!--
-  This is the CANONICAL skill: the single source of truth for this procedure.
+  This SKILL.md is the single source of truth for this procedure.
   Per-harness adapters point back to this file and must never fork the procedure.
   Keep it tool-neutral. Describe the goal and the output shape, not model-specific tricks.
 -->
@@ -26,7 +26,7 @@ Reference paths through these named bindings (set per machine in `bindings.env`)
 | Binding | Meaning | Local default |
 |---|---|---|
 | `${SUPPORT_ROOT}` | The support layer | `<workspace>/agentic-support` |
-| `${PRODUCT_WORK_ROOT}` | Canonical product work | `<workspace>/canonical` |
+| `${PRODUCT_WORK_ROOT}` | Shared product work | `<workspace>/product-work` |
 
 ## Triggers
 
@@ -65,4 +65,4 @@ If a required file is missing, continue with the best available local pattern an
 
 ## Harness Interpretation
 
-Claude, Codex, OpenCode, and other harnesses preserve the same output shape. This canonical file controls behavior; if a per-harness adapter disagrees or is stale, this file wins.
+Claude, Codex, OpenCode, and other harnesses preserve the same output shape. This file is the source of truth; if a per-harness adapter disagrees or is stale, this file wins.

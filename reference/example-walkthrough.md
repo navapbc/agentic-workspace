@@ -44,7 +44,7 @@ Marcus needs in, and they keep repeating the same "draft a notice-change brief" 
 3. **Write the first skill.** They turn the brief procedure into `agentic-support/skills/notice-change-brief/SKILL.md` from the example template: triggers, required context, the steps, the output shape, guardrails. They register it in `skill-manifest.yaml`.
 4. **Sync.** Each of them runs `./sync-skills.sh --target all` once, so Claude Code and Codex both have the skill. Now Marcus on Codex and Priya on Claude Code run the *same* procedure and get the *same* brief.
 5. **First Context Fabric profile.** BN reads from an upstream "Eligibility" system and lives in two repos. They create a `system:eligibility` record, two `repository:` records, and a `product:benefits-notices` profile that references them with tiers and `useWhen` triggers. They add `Context Fabric profile: product:benefits-notices` to the workspace's product-area `AGENTS.md`.
-6. **Split the lanes.** Reviewed briefs go in `canonical/benefits-notices/`; a throwaway notice-layout mockup goes in `prototyping/`.
+6. **Split the lanes.** Briefs the team relies on go in `product-work/benefits-notices/`; a throwaway notice-layout mockup goes in `prototyping/`.
 
 **Result:** Two PMs, two different tools, one shared context and one shared procedure. The brief procedure now compounds instead of living in Priya's head.
 
@@ -56,9 +56,9 @@ BN succeeds; the team now also owns *Appeals Status* and *Address Update*, and a
 
 1. **More profiles.** Each new product gets its own `product:` profile. The shared "Eligibility" system record is reused, not recopied.
 2. **Validation in the loop.** They move the `agentic-support/` layer into git and run `validate-workspace.sh` in CI. It catches a stray absolute path and a `.DS_Store` before either is shared.
-3. **Stewardship.** Priya stewards BN, Marcus stewards Appeals Status, the new PM stewards Address Update. Each steward is the human review gate for their area; a stewardship table lists them.
+3. **Ownership (the team's choice).** With three products, they decide it's worth naming an owner each: Priya on BN, Marcus on Appeals Status, the new PM on Address Update. A short table lists them, and for BN's higher-stakes notice language they agree a peer looks it over before it ships. Address Update, lower-stakes, skips the review step.
 4. **Ship incrementally with `status`.** They sketch an "onboarding" skill but haven't finished it, so they mark it `paused` in the manifest. It's visible as intent without pretending to be done.
-5. **Expert panel.** For a high-stakes notice-language change, they run an expert-panel review: an agent adopts five role personas (plain-language, accessibility, policy-accuracy, operations, legal) in sequence to critique the draft. The disagreements surface a real trade-off they then take to a human reviewer.
+5. **Persona review for high-stakes work.** For a sensitive notice-language change, they have an agent critique the draft from a few role angles (plain-language, accessibility, policy-accuracy) before a human reviewer signs off.
 
 **Result:** A versioned, validated, three-product operating system. A fourth PM can be onboarded by pointing them at the workspace and running the onboarding skill. Context and procedures are shared assets, independent of anyone's tool or model.
 
@@ -66,7 +66,7 @@ BN succeeds; the team now also owns *Appeals Status* and *Address Update*, and a
 
 ## What to copy from this
 
-- Start tiny. One thin `AGENTS.md` and the Docs lanes are genuinely useful on day one.
+- Start tiny. One thin `AGENTS.md` and a couple of docs lanes are genuinely useful on day one.
 - Add a skill the second time you repeat a procedure, not before.
 - Add a Context Fabric profile when "which system/repo?" keeps coming up.
 - Reuse system and repo records across products; never recopy them.

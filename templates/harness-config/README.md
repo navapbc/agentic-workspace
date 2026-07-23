@@ -20,4 +20,4 @@ Any tool with an agent-instructions file can point at `AGENTS.md`. If it insists
 
 ## The invariant
 
-`AGENTS.md` is canonical. Every per-tool file is a pointer (`CLAUDE.md` = `@AGENTS.md` import) or config, never an independent copy. Change boundaries in `AGENTS.md`; the import means Claude Code picks the change up automatically.
+`AGENTS.md` is the source of truth. Every per-tool file is a pointer (`CLAUDE.md` = `@AGENTS.md` import) or config, never an independent copy. Change boundaries in `AGENTS.md`; the import means Claude Code picks the change up automatically.

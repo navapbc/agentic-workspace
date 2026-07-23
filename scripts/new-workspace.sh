@@ -9,7 +9,7 @@
 #   --with-support  also scaffold the Walk-phase support layer (skills/ + context-fabric/)
 #
 # Creates a Crawl-phase workspace: thin AGENTS.md (+ CLAUDE.md mirror), README,
-# the standard docs lanes, and the canonical/ and prototyping/ lanes.
+# the suggested docs lanes, and the product-work/ and prototyping/ lanes.
 # Directory names follow the kit's kebab-case standard (see docs/directory-and-naming-standard.md).
 # Fill in the placeholders afterward; keep AGENTS.md thin.
 
@@ -47,7 +47,7 @@ if [ -e "$ws" ]; then
   exit 1
 fi
 
-mkdir -p "$ws/canonical" "$ws/prototyping" "$ws/docs"
+mkdir -p "$ws/product-work" "$ws/prototyping" "$ws/docs"
 
 # Copy templates, stripping the .template suffix and substituting the workspace name.
 substitute() { sed "s/{{WORKSPACE_NAME}}/$name/g" "$1" > "$2"; }
@@ -60,7 +60,7 @@ substitute "$tpl/README.md.template" "$ws/README.md"
 substitute "$tpl/bindings.env.template" "$ws/bindings.env.template"
 cp "$tpl/docs/README.md" "$ws/docs/README.md"
 
-# Standard docs lanes.
+# Suggested docs lanes (rename, drop, or add your own — see docs/README.md).
 for lane in ideation plans solutions; do
   mkdir -p "$ws/docs/$lane"
 done

@@ -55,7 +55,7 @@ A mature deployment separates the layers into distinct top-level folders:
 | Persistent context (kit defers this — see architecture §6) | A memory loop (`MEMORY.md` index → `memory/*.md`, plus a prompt log and a task list) |
 | Named onboarding | A `pm-onboarding` skill that walks a new PM through setup |
 | Stewardship | A stewardship summary table plus `maintainers` on each profile |
-| Expert / user panels | Role personas an agent adopts to review artifacts, plus human advisors for high-stakes work |
+| Review personas | Role personas an agent adopts to critique artifacts, plus human advisors for high-stakes work |
 
 ## The anatomy of a mature product area
 

@@ -1,9 +1,9 @@
 #!/bin/sh
-# Mirror canonical skills into each harness's runtime directory.
+# Mirror the source-of-truth skills into each harness's runtime directory.
 #
-# Canonical source: the directory this script lives in must be the support layer's
+# Source of truth: the directory this script lives in must be the support layer's
 # `skills/` folder, containing `skill-manifest.yaml` and `<skill-name>/SKILL.md`.
-# Runtime copies are GENERATED; never edit them directly. Edit the canonical bundle.
+# Runtime copies are GENERATED; never edit them directly. Edit the source-of-truth bundle.
 #
 # Usage:
 #   ./sync-skills.sh [--target opencode|codex|claude|all] [--check]
@@ -40,7 +40,7 @@ case "$target" in
   *) usage >&2; exit 2 ;;
 esac
 
-# Resolve the directory this script lives in (the canonical skills/ dir).
+# Resolve the directory this script lives in (the source-of-truth skills/ dir).
 unset CDPATH || true
 skills_dir=$(cd -- "$(dirname -- "$0")" && pwd)
 manifest="$skills_dir/skill-manifest.yaml"
@@ -113,7 +113,7 @@ for t in $(targets_for "$target"); do
       continue
     fi
 
-    # sync: refresh the canonical bundle (minus adapters/), then overlay this harness's adapter.
+    # sync: refresh the source-of-truth bundle (minus adapters/), then overlay this harness's adapter.
     mkdir -p "$dst"
     if command -v rsync >/dev/null 2>&1; then
       rsync -a --delete --exclude adapters/ "$src"/ "$dst"/

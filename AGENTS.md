@@ -15,7 +15,7 @@ Someone is creating a new shared workspace, or adding to one, using these templa
 - **Keep `AGENTS.md` files thin.** Boundaries, routing, and exceptions only. Never copy procedures or shared facts into them. Reference the support layer instead.
 - **Bridge Claude Code with an import, not a copy.** Any folder with an `AGENTS.md` should have a `CLAUDE.md` containing the single line `@AGENTS.md` (Claude Code reads `CLAUDE.md`, not `AGENTS.md`). Never duplicate `AGENTS.md` content into `CLAUDE.md`.
 - **Honor the safety invariants** in `docs/local-setup.md` and `docs/collaboration-and-governance.md`: no credentials, no code checkouts inside the workspace, no absolute machine paths in shared files, no OS metadata.
-- **One source of truth.** Canonical skills and Context Fabric records live in the support layer. Anything in a product folder that looks like shared context is a labeled pointer, never a second copy.
+- **One source of truth.** Skills and Context Fabric records live in the support layer. Anything in a product folder that looks like shared context is a labeled pointer, never a second copy.
 
 ### Mode 2: Improving the kit itself
 

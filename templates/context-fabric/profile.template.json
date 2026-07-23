@@ -33,7 +33,7 @@
     }
   ],
   "taskGuidance": {
-    "synthesisBelongsIn": "canonical/{{product-slug}}/docs",
+    "synthesisBelongsIn": "product-work/{{product-slug}}/docs",
     "notes": "{{Where outputs for this product go, and any product-specific routing.}}"
   },
   "provenance": {

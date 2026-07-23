@@ -4,7 +4,7 @@
 
 ## Start here
 
-- [AGENTS.md](AGENTS.md): canonical agent instructions for working in this kit (Claude Code reads CLAUDE.md, which imports AGENTS.md).
+- [AGENTS.md](AGENTS.md): the source-of-truth agent instructions for working in this kit (Claude Code reads CLAUDE.md, which imports AGENTS.md).
 - [START-HERE.md](START-HERE.md): the operating model in plain language and how to adopt it.
 - [README.md](README.md): human-facing overview and quickstart.
 
@@ -14,7 +14,7 @@
 - [docs/phased-adoption.md](docs/phased-adoption.md): Crawl / Walk / Run adoption path.
 - [docs/local-setup.md](docs/local-setup.md): harness- and model-agnostic setup.
 - [docs/harness-and-model-agnostic.md](docs/harness-and-model-agnostic.md): why the kit stays portable.
-- [docs/collaboration-and-governance.md](docs/collaboration-and-governance.md): canonical vs. prototype, stewardship, sharing.
+- [docs/collaboration-and-governance.md](docs/collaboration-and-governance.md): the two lanes, optional review/ownership, and git/Drive setup.
 - [docs/context-fabric.md](docs/context-fabric.md): the shared-context catalog.
 - [docs/directory-and-naming-standard.md](docs/directory-and-naming-standard.md): kebab-case directory rule.
 - [docs/glossary.md](docs/glossary.md): shared vocabulary.
@@ -30,6 +30,7 @@
 
 ## Examples
 
+- [reference/anatomy.md](reference/anatomy.md): one-page visual anatomy of the kit (renders on GitHub).
 - [reference/sandbox/](reference/sandbox/): a fully populated, fictional workspace to trial.
 - [reference/example-walkthrough.md](reference/example-walkthrough.md): a fictional team adopting the kit end to end.
 - [reference/reference-implementation.md](reference/reference-implementation.md): how the model maps onto a mature deployment.

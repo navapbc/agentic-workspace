@@ -15,10 +15,10 @@ This is a shared agentic product workspace, stood up from Nava's Agentic Workspa
 
 ## Layout
 
-- `canonical/` — reviewed, source-of-truth product work.
+- `product-work/` — shared product work the team relies on.
 - `prototyping/` — spikes and experiments.
 - `agentic-support/` — shared skills and Context Fabric (Walk phase and up).
-- `docs/` — standard lanes: `ideation/`, `plans/`, `solutions/`.
+- `docs/` — suggested lanes to start from: `ideation/`, `plans/`, `solutions/`. Rename, drop, or add your own.
 
 Directory names follow lowercase kebab-case. See the kit's `docs/directory-and-naming-standard.md`.
 
@@ -26,5 +26,6 @@ Directory names follow lowercase kebab-case. See the kit's `docs/directory-and-n
 
 - **Phase:** {{Crawl | Walk | Run}}
 - **Sharing:** {{Google Drive | git}}
-- **Stewards:** {{name per product area}}
+- **Docs lanes:** {{which lanes this team actually uses}}
+- **Review / ownership:** {{optional — e.g. who reviews before sharing, named owners per area, or "lightweight, no formal gate"}}
 - **Harnesses in use:** {{Claude Code, Codex, OpenCode, ...}}

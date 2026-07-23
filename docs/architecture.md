@@ -37,9 +37,9 @@ The design has one goal: **an agent, working in any folder, on any tool, on any 
 ┌──────────────────────────────────────────────────────────────────┐
 │  PRODUCT-WORK LAYER  —  the actual artifacts                       │
 │                                                                    │
-│   canonical/     one folder per product area (reviewed, shareable) │
+│   product-work/  one folder per product area (shared, in use)      │
 │                  each declares ONE context-fabric profile          │
-│   prototyping/   spikes, mockups, experiments (pre-review)         │
+│   prototyping/   spikes, mockups, experiments                      │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -73,7 +73,7 @@ Every folder that needs boundaries gets an `AGENTS.md`. Rules:
 - **Thin.** Directory-specific boundaries, routing, and exceptions only. No copied procedures, no duplicated facts.
 - **Cascading.** Root sets the authority boundary. Each child narrows it. The nearest, most-specific file wins for local decisions, unless it conflicts with a higher authority boundary.
 - **Profile-declaring.** A product-area `AGENTS.md` declares exactly one Context Fabric profile at the top, e.g. `Context Fabric profile: product:my-product`. That one line connects the folder to its shared facts.
-- **Bridged for Claude Code.** `AGENTS.md` is the canonical, cross-tool file, but Claude Code reads `CLAUDE.md`, not `AGENTS.md`. Add a `CLAUDE.md` that is a one-line `@AGENTS.md` import (not a copy), so there is nothing to keep in sync. (See [harness-and-model-agnostic.md](harness-and-model-agnostic.md).)
+- **Bridged for Claude Code.** `AGENTS.md` is the source-of-truth, cross-tool file, but Claude Code reads `CLAUDE.md`, not `AGENTS.md`. Add a `CLAUDE.md` that is a one-line `@AGENTS.md` import (not a copy), so there is nothing to keep in sync. (See [harness-and-model-agnostic.md](harness-and-model-agnostic.md).)
 
 A good root `AGENTS.md` is often under 20 lines. See `../templates/workspace/AGENTS.md.template`.
 
@@ -86,7 +86,7 @@ This is the reusable operating system. It is a **separate top-level folder** (fo
 ### skills/
 A skill is a written-down procedure an agent can follow: role intake, a policy extraction, an onboarding flow. Each lives at `skills/<name>/SKILL.md` with YAML frontmatter and standard sections (Triggers, Required Context, Procedure, Guardrails, Output Shape). A `skill-manifest.yaml` indexes them with a `status` field (`enabled` / `paused`) so you can ship the structure before every skill is finished.
 
-The canonical `SKILL.md` is the source of truth. Each tool gets a **thin adapter** under `skills/<name>/adapters/<harness>/` that points back to it and never forks the procedure. A sync script mirrors skills into each tool's runtime directory. See [context-fabric.md](context-fabric.md) and `../templates/skills/`.
+The `SKILL.md` is the source of truth. Each tool gets a **thin adapter** under `skills/<name>/adapters/<harness>/` that points back to it and never forks the procedure. A sync script mirrors skills into each tool's runtime directory. See [context-fabric.md](context-fabric.md) and `../templates/skills/`.
 
 ### context-fabric/
 A schema-governed catalog of small, reviewable JSON records describing shared facts. Three record kinds:
@@ -107,14 +107,14 @@ A script that checks the invariants after any structural change: every skill in 
 
 ---
 
-## 5. The product-work layer: canonical vs. prototype
+## 5. The product-work layer: product work vs. prototyping
 
-Two lanes, governed by a short root charter:
+Two lanes, named by intent:
 
-- **Canonical** (`canonical/` or `product-work/`): reviewed, source-of-truth, collaboration-ready **after human review**. One folder per product area, each declaring its Context Fabric profile, with standard Docs lanes.
-- **Prototyping** (`prototyping/` or `local-solutions-prototyping/`): spikes, mockups, experiments. May contain runnable code and lanes forbidden in canonical work. Has no assigned profile; it borrows the canonical Context Fabric when it needs context. Promotion into canonical is an intentional, gated step, not a drag-and-drop.
+- **Product work** (`product-work/`, or whatever your team names it): the work the team relies on and shares. One folder per product area, each declaring its Context Fabric profile, with the team's chosen docs lanes.
+- **Prototyping** (`prototyping/`): spikes, mockups, experiments. May contain runnable code and extra lanes. Has no assigned profile; it borrows the product-work Context Fabric when it needs context. Promotion into product work is an intentional move, not a drag-and-drop.
 
-"Canonical" is defined by **lane + review gate + named steward**, not by location alone. See [collaboration-and-governance.md](collaboration-and-governance.md).
+The split is by **location and intent** — "does the team rely on this, or am I still figuring it out?" How much review, ownership, or status labeling to attach to the product-work lane is a team choice, not a fixed rule. See [collaboration-and-governance.md](collaboration-and-governance.md).
 
 ---
 
@@ -128,11 +128,11 @@ Workspaces that run many sessions will eventually want context to survive across
 
 ## 7. How context actually flows (a concrete trace)
 
-A PM opens their tool in `canonical/my-product/` and asks the agent to draft a spec.
+A PM opens their tool in `product-work/my-product/` and asks the agent to draft a spec.
 
 1. The tool loads the nearest `AGENTS.md` (and `CLAUDE.md` if it's Claude Code). It reads: this is the My-Product area; boundaries X, Y; `Context Fabric profile: product:my-product`; reusable procedures live in the support layer.
 2. The agent resolves `product:my-product` in the Context Fabric. It learns the product's aliases, which systems and repos it touches (and which parts), the vocabulary, and the steward.
-3. If the task matches a skill (say, a spec-drafting procedure), the agent reads that skill's canonical `SKILL.md` and follows it.
+3. If the task matches a skill (say, a spec-drafting procedure), the agent reads that skill's `SKILL.md` and follows it.
 4. The agent produces the artifact in the correct docs lane, honoring the boundaries, without a human having restated any of it.
 
 Every fact the agent used was written down once and referenced, not repeated. That is the whole architecture.
@@ -143,5 +143,5 @@ Every fact the agent used was written down once and referenced, not repeated. Th
 
 The internal reference implementation surfaced two ambiguities worth resolving up front in any new workspace:
 
-- **One source of truth.** Canonical skills and Context Fabric records live in the support layer, full stop. Anything in a product folder that looks like shared context is a *pointer* to the support layer, clearly labeled as such. Do not maintain two "active" copies.
+- **One source of truth.** Skills and Context Fabric records live in the support layer, full stop. Anything in a product folder that looks like shared context is a *pointer* to the support layer, clearly labeled as such. Do not maintain two "active" copies.
 - **One sharing mechanism, chosen on purpose.** Decide git-backed or Drive-backed sharing per team and per phase, and write it down. Do not wire up both halfway. The kit recommends Drive for Crawl (low friction) and git for the support layer at Run (versioned, drift-checkable). See [collaboration-and-governance.md](collaboration-and-governance.md).

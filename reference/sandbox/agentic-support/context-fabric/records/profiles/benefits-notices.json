@@ -28,7 +28,7 @@
     }
   ],
   "taskGuidance": {
-    "synthesisBelongsIn": "canonical/benefits-notices/docs",
+    "synthesisBelongsIn": "product-work/benefits-notices/docs",
     "notes": "Deliverables and research for BN go under the product area's docs lanes."
   },
   "provenance": { "source": "sandbox seed", "addedBy": "kit" },

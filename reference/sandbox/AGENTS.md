@@ -13,7 +13,7 @@ Scope: Shared product workspace for the fictional Benefits Notices (BN) team. Ex
 
 ## Layout
 
-- `canonical/` — reviewed product work. One folder per product area; each declares one Context Fabric profile.
+- `product-work/` — shared product work the team relies on. One folder per product area; each declares one Context Fabric profile.
 - `prototyping/` — spikes, mockups, experiments. No assigned profile.
 - `agentic-support/` — reusable skills and shared context (Context Fabric).
 

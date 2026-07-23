@@ -40,6 +40,15 @@ Node is only needed if your team runs the optional JSON-schema validation and pr
 
 The workspace is authored once and read by whatever tool each teammate uses. The bridge is always `AGENTS.md`.
 
+### Choosing a harness (least-technical first)
+
+If you do not use a terminal, prefer a graphical or web agent over a command-line one. None of these need a command line:
+
+- **Claude Desktop, the claude.ai web app, or Cursor** — graphical apps. Good default for non-technical teammates.
+- **Claude Code** — powerful but runs in a terminal. Best for people already comfortable there.
+
+A web-only agent (for example claude.ai with the Google Drive connector) can work without installing anything locally. It cannot run the kit's scripts or validator, which is fine at Crawl. For that path, share the workspace over Google Drive (see [collaboration-and-governance.md](collaboration-and-governance.md)). The per-tool setup below applies whichever you pick.
+
 ### Claude Code
 Reads `CLAUDE.md`, **not** `AGENTS.md`. In each folder that has an `AGENTS.md`, add a `CLAUDE.md` containing the single line `@AGENTS.md` — Claude Code expands that import at session start, so you maintain only `AGENTS.md`. `new-workspace.sh` creates the root `CLAUDE.md` import for you, and skills sync into Claude Code's skills directory. No project config file is required to pick up `CLAUDE.md`. (A symlink `CLAUDE.md -> AGENTS.md` works too, but the import is safer over Google Drive and on Windows.)
 
@@ -60,7 +69,7 @@ Reads `AGENTS.md` directly and can consume the shared `SKILL.md` bundle without 
 ### Cursor and others
 Any tool that supports an agent-instructions file can point at `AGENTS.md`. If it uses a different filename, add a thin file that says "read `AGENTS.md`" rather than duplicating content.
 
-The rule across all tools: **`AGENTS.md` is canonical; per-tool files are mirrors or pointers, never independent copies.** See [harness-and-model-agnostic.md](harness-and-model-agnostic.md).
+The rule across all tools: **`AGENTS.md` is the source of truth; per-tool files are mirrors or pointers, never independent copies.** See [harness-and-model-agnostic.md](harness-and-model-agnostic.md).
 
 ---
 
@@ -69,7 +78,7 @@ The rule across all tools: **`AGENTS.md` is canonical; per-tool files are mirror
 Skills are authored once under `skills/<name>/SKILL.md` (in the support layer) and mirrored into each tool's runtime directory. `sync-skills.sh` ships inside `templates/skills/` and is copied into your workspace's `agentic-support/skills/`. Each teammate runs it from there:
 
 ```bash
-./agentic-support/skills/sync-skills.sh --target all   # mirror canonical skills into each tool
+./agentic-support/skills/sync-skills.sh --target all   # mirror source-of-truth skills into each tool
 ./agentic-support/skills/sync-skills.sh --check         # detect stale/missing mirrors (CI or preflight)
 ```
 
@@ -81,7 +90,7 @@ codex    -> ~/.agents/skills
 claude   -> ~/.claude/skills
 ```
 
-Adjust to your machine. The canonical `skills/<name>/` is the only thing you edit; the mirrors are generated.
+Adjust to your machine. The source-of-truth `skills/<name>/` is the only thing you edit; the mirrors are generated.
 
 ---
 
@@ -92,7 +101,7 @@ Skills and workflows reference paths through **named bindings** instead of hardc
 ```
 WORKSPACE_ROOT=/Users/you/your-workspace
 SUPPORT_ROOT=${WORKSPACE_ROOT}/agentic-support
-PRODUCT_WORK_ROOT=${WORKSPACE_ROOT}/canonical
+PRODUCT_WORK_ROOT=${WORKSPACE_ROOT}/product-work
 PROTOTYPE_ROOT=${WORKSPACE_ROOT}/prototyping
 ```
 

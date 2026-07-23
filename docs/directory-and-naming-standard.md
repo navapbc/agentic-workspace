@@ -11,7 +11,7 @@ One rule, so directories are consistent across the kit and every workspace built
 
 ## The rule
 
-**Directories use lowercase kebab-case (words separated by hyphens, no spaces).** Examples: `agentic-support/`, `context-fabric/`, `harness-config/`, `product-area/`, `canonical/`, `prototyping/`, `docs/`, `templates/`, `reference/`, `scripts/`.
+**Directories use lowercase kebab-case (words separated by hyphens, no spaces).** Examples: `agentic-support/`, `context-fabric/`, `harness-config/`, `product-area/`, `product-work/`, `prototyping/`, `docs/`, `templates/`, `reference/`, `scripts/`.
 
 This matches the internal reference implementation's conventions (`context-fabric`, kebab-cased skill and Context Fabric slugs) and the identifiers the kit already requires, so there is a single convention with no exceptions to remember.
 
@@ -19,7 +19,7 @@ This matches the internal reference implementation's conventions (`context-fabri
 
 - **No quoting or encoding, ever.** Paths in shell, `bindings.env`, `opencode.json`, and markdown links all work unquoted and unescaped. Nothing to remember, nothing to get wrong.
 - **One convention.** Skill bundle directories must be kebab-case (the folder name *is* the skill's invocable name) and Context Fabric slugs are kebab-case. Everything else matching removes the special cases.
-- **Aligns with tool defaults.** Tool directories like `skills/` and compound-engineering lanes like `docs/solutions/` are already lowercase, so there is no lane-casing conflict.
+- **Aligns with tool defaults.** Agent tools already expect lowercase directories like `skills/` and `docs/`, so there is no lane-casing conflict whatever docs lanes your team picks.
 - **Portable and git-clean** across case-insensitive (macOS) and case-sensitive (Linux) filesystems.
 
 ## Scope and the one soft edge

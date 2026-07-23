@@ -15,7 +15,7 @@ A shared workspace is worthless if it only works for the person who built it, on
 
 ## The single rule that makes it work
 
-**Everything reusable is plain text (markdown, JSON) or plain shell, and `AGENTS.md` is the one canonical instruction file.** Nothing reusable is expressed as tool-specific config or model-specific API calls.
+**Everything reusable is plain text (markdown, JSON) or plain shell, and `AGENTS.md` is the one source-of-truth instruction file.** Nothing reusable is expressed as tool-specific config or model-specific API calls.
 
 From that rule, portability follows:
 
@@ -37,9 +37,9 @@ From that rule, portability follows:
 ### Support layer — skills
 A skill has three parts:
 
-1. **Canonical `SKILL.md`** — the full procedure, tool-neutral, with a `portable_across_harnesses: true` marker and a short "Harness Interpretation" note stating that every tool preserves the same output shape.
-2. **Thin adapters** at `skills/<name>/adapters/<harness>/` — each is a pointer that says "the canonical `SKILL.md` controls behavior; if this adapter disagrees, the canonical copy wins." Adapters differ only in the tool's name and its discovery convention. They never fork the procedure.
-3. **A sync script** that mirrors the canonical bundle into each tool's runtime directory, with a `--check` mode for drift.
+1. **The `SKILL.md`** — the full procedure, tool-neutral, with a `portable_across_harnesses: true` marker and a short "Harness Interpretation" note stating that every tool preserves the same output shape. This file is the source of truth.
+2. **Thin adapters** at `skills/<name>/adapters/<harness>/` — each is a pointer that says "the `SKILL.md` controls behavior; if this adapter disagrees, the source-of-truth copy wins." Adapters differ only in the tool's name and its discovery convention. They never fork the procedure.
+3. **A sync script** that mirrors the source-of-truth bundle into each tool's runtime directory, with a `--check` mode for drift.
 
 This is what lets a Codex user and a Claude Code user run the "same" skill and get the same result.
 
@@ -54,7 +54,7 @@ Plain shell with `set -euo pipefail`, driven by explicit CLI arguments. No depen
 ## Model-agnostic specifics
 
 - **No model IDs or provider SDKs** appear in the workspace. If you build automation that calls a model, keep it in the prototyping lane and behind a boundary; do not bake a model choice into shared skills.
-- **Personas and review panels** (expert-panel review, adversarial critique) are written as role descriptions and challenge patterns. Any capable model can adopt them. They are prompts, not code.
+- **Review personas** are written as role descriptions and challenge patterns — prompts any capable model can adopt, not code.
 - **Prompts avoid model-specific quirks.** Procedures describe the goal and the output shape, so a stronger or different model produces the same artifact.
 
 ---

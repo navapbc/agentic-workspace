@@ -2,7 +2,7 @@
 purpose: How multiple PMs share a workspace safely. The two lanes, optional review and ownership practices, and how to set up git or Google Drive sharing.
 audience: PMs setting up multi-person collaboration in a shared agentic workspace.
 status: Active.
-last_updated: 2026-07-22
+last_updated: 2026-07-29
 ---
 
 # Collaboration and Governance
@@ -73,7 +73,6 @@ benefits-notices-workspace/        <- the Shared Drive folder = workspace root
 ├─ AGENTS.md
 ├─ CLAUDE.md                        (one line: @AGENTS.md)
 ├─ README.md
-├─ bindings.env.template            (commit the template only, never a filled-in bindings.env)
 ├─ product-work/
 ├─ prototyping/
 ├─ docs/
@@ -86,7 +85,9 @@ Scaffold locally first, then move the folder into the Shared Drive (or run `new-
 
 **4. Make the workspace available offline (mirrored), not stream-only.** Agent tools need to read real files, not on-demand placeholders. In Drive for Desktop, set the workspace folder to **Available offline** (right-click → Offline access → Available offline) so it is mirrored to disk.
 
-**5. Point the harness and bindings at that local path.** Open the synced folder in your agent tool (see [local-setup.md](local-setup.md)). Copy `bindings.env.template` to `bindings.env` and set `WORKSPACE_ROOT` to your machine's Drive path. `bindings.env` is per-machine — never commit it into the shared folder.
+**5. Point the harness at that local path, from user scope.** Add the synced folder as an additional root in your harness's user-scope settings, and launch sessions with a machine-local primary folder (see [local-setup.md](local-setup.md)). Then declare your roots with `agentic-support/tools/generate-workspace-descriptor.sh`; the declaration lands in your home directory and is never synced.
+
+**Never let your harness write settings into the synced folder.** With no review gate, sync is the distribution channel: one member's `settings.local.json` lands in every teammate's project scope silently. The workspace doctor flags it, but the durable fix is the launch shape.
 
 **6. Use the `@AGENTS.md` import for `CLAUDE.md`, not a symlink.** Symlinks do not survive Drive sync or Windows; the one-line `@AGENTS.md` import does. `new-workspace.sh` already creates it this way.
 
@@ -97,7 +98,9 @@ Scaffold locally first, then move the folder into the Shared Drive (or run `new-
 
 ### Setting up git sharing
 
-Initialize the workspace (or just the support layer) as a git repo, push it to your team's host, and have each teammate clone it to a local path outside any cloud-synced folder. Point the harness and `bindings.env` at the clone. At Run phase, add `scripts/validate-workspace.sh` as a CI check so the invariants are enforced on every change. Keep code checkouts out of the repo — reference them by path via bindings.
+Initialize the workspace (or just the support layer) as a git repo, push it to your team's host, and have each teammate clone it to a local path outside any cloud-synced folder. Point the harness at the clone and declare roots with `agentic-support/tools/generate-workspace-descriptor.sh`. At Run phase, add `agentic-support/validation/check-workspace.sh` as a CI check so the invariants are enforced on every change. Keep code checkouts out of the repo — they live in the declared machine-local checkouts root and are referenced by binding token.
+
+Going git-backed changes the safety model, not just the plumbing: you gain review and revert, so snapshot-first record editing becomes optional (the record changelog stays useful as a plain-language history for teammates who do not read git logs).
 
 ---
 

@@ -1,6 +1,6 @@
 # Local, per-machine, and secret files — never commit.
 # (The kit's own safety invariant: no secrets or absolute machine paths in the repo.)
-bindings.env
+bindings.env          # legacy (pre-0.2.0); per-machine paths now live in ~/.agentic-workspace/
 .env
 .env.*
 *.local

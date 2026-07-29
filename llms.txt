@@ -22,8 +22,8 @@
 ## Templates and scripts
 
 - [templates/workspace/](templates/workspace/): copy-to-create workspace scaffold.
-- [templates/skills/](templates/skills/): portable skill bundle + sync script.
-- [templates/context-fabric/](templates/context-fabric/): Context Fabric record templates.
+- [templates/support/](templates/support/): the complete support engine — skills, Context Fabric, tools, validation, doctrine. Installs verbatim.
+- [scripts/install-support.sh](scripts/install-support.sh): install or upgrade the support engine in a workspace.
 - [scripts/new-workspace.sh](scripts/new-workspace.sh): scaffold a new workspace.
 - [scripts/validate-workspace.sh](scripts/validate-workspace.sh): check a workspace's invariants.
 - [scripts/seed-sandbox.sh](scripts/seed-sandbox.sh): regenerate the example sandbox.

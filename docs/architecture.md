@@ -2,7 +2,7 @@
 purpose: The architecture overview for a shared agentic product workspace. Layers, the authority chain, record kinds, and how context resolves.
 audience: PMs and technical leads who want to understand the model before adopting it.
 status: Active.
-last_updated: 2026-07-22
+last_updated: 2026-07-29
 ---
 
 # Architecture Overview
@@ -10,6 +10,33 @@ last_updated: 2026-07-22
 This is the clear picture of how a shared agentic workspace is put together. It generalizes the internal reference implementation (see [../reference/reference-implementation.md](../reference/reference-implementation.md)).
 
 The design has one goal: **an agent, working in any folder, on any tool, on any machine, can reliably resolve what's true, what's allowed, and how the team does things** — without a human re-explaining it.
+
+---
+
+## 0. The workspace is multi-root
+
+Before the layers, the topology. A member's workspace is **several physical directories handed to the harness at once**, not one folder:
+
+```
+  shared workspace root                     machine-local roots
+  (git clone, or synced storage)            (never synced)
+  ├── AGENTS.md / CLAUDE.md                 ├── repo-checkouts/     ← git checkouts
+  ├── agentic-support/   ← the engine       │   └── AGENTS.md (points back to the engine)
+  ├── product-work/                         └── <personal working dir>  (optional)
+  └── prototyping/
+                    ▲                                    ▲
+                    └──────── both declared in ───────────┘
+                       ~/.agentic-workspace/workspace-descriptor.yaml
+                       (per machine · never synced · declared, not derived)
+```
+
+Three rules make this work, and each one exists because the obvious alternative failed in practice:
+
+- **Physical roots, not symlinks.** Harness file viewers and pickers do not display the contents of symlinked folders, so a root assembled from links is invisible exactly where members work — while shell tools and validators still report green.
+- **Declared, not derived.** Each member declares their machine-local roots once; tools resolve from that declaration and **fail closed** when it is missing or stale. A tool that guesses from sibling directories is right on the machine it was written on and quietly wrong everywhere else.
+- **Machine-local primary folder.** Harnesses write session state (permission grants, local overrides) under the session's primary folder. If that folder is synced, one member's personal settings reach the whole team — and deleting the file does not help, because the next session recreates it.
+
+`agentic-support/tools/workspace-doctor.sh` reports, at session start, which roots this session actually has and which capability tiers are therefore available. The full model is in the engine's own `docs/workspace-routing.md` and `docs/skill-binding-contract.md`.
 
 ---
 
@@ -79,31 +106,56 @@ A good root `AGENTS.md` is often under 20 lines. See `../templates/workspace/AGE
 
 ---
 
-## 4. The support layer: skills, context fabric, tools, validation
+## 4. The support layer: the engine you install
 
-This is the reusable operating system. It is a **separate top-level folder** (for example, `agentic-support/`). It owns reusable capabilities, shared context, support mechanics, and validation. It does **not** own product strategy, generic documents, code checkouts, credentials, or local tool settings.
+This is the reusable operating system. It is a **separate top-level folder** (`agentic-support/`). It owns reusable capabilities, shared context, support mechanics, and validation. It does **not** own product strategy, generic documents, code checkouts, credentials, or local tool settings.
+
+You do not build it. The kit ships it whole in [`../templates/support/`](../templates/support/), and [`../scripts/install-support.sh`](../scripts/install-support.sh) installs or upgrades it:
+
+```bash
+./scripts/install-support.sh <workspace> --check   # see what would change
+./scripts/install-support.sh <workspace>
+```
+
+**Every file installs verbatim except two you author yourself:** `CONCEPTS.md` (your vocabulary) and `docs/context-source-ladder.md` (your sources). That property is what makes upgrades possible — a team pulls a newer engine without re-merging their own work, and a locally modified generic file is reported as a conflict rather than silently overwritten.
 
 ### skills/
-A skill is a written-down procedure an agent can follow: role intake, a policy extraction, an onboarding flow. Each lives at `skills/<name>/SKILL.md` with YAML frontmatter and standard sections (Triggers, Required Context, Procedure, Guardrails, Output Shape). A `skill-manifest.yaml` indexes them with a `status` field (`enabled` / `paused`) so you can ship the structure before every skill is finished.
+A skill is a written-down procedure an agent can follow. Each lives at `skills/<id>/SKILL.md` with YAML frontmatter and required sections (Procedure, Guardrails, Output Shape, Failure Handling, Harness Interpretation). `skill-manifest.yaml` is the availability authority, with `enabled` / `partially-paused` / `paused` — and a **required `review_by` date on anything paused**, so a pause is a decision with a deadline rather than an untracked gap. The doctor surfaces overdue reviews at session start.
 
-The `SKILL.md` is the source of truth. Each tool gets a **thin adapter** under `skills/<name>/adapters/<harness>/` that points back to it and never forks the procedure. A sync script mirrors skills into each tool's runtime directory. See [context-fabric.md](context-fabric.md) and `../templates/skills/`.
+The `SKILL.md` is the source of truth. Each harness that needs a different runtime artifact gets a **thin adapter** under `skills/<id>/adapters/<harness>/` that points back to it and never forks the procedure. `sync-skills.sh` mirrors skills into each harness's runtime directory and detects drift with `--check`.
+
+Three skills ship enabled: `workspace-setup` (interviews a new member from folder access to doctor-green), `artifact-routing` (the judgment cases the routing tool cannot decide), and `repo-sync` (digest-bound checkout hydration).
 
 ### context-fabric/
-A schema-governed catalog of small, reviewable JSON records describing shared facts. Three record kinds:
+A schema-governed catalog of small, reviewable JSON records describing shared facts. Four record kinds:
 
 | Kind | ID form | What it holds |
 |---|---|---|
-| **system resource** | `system:<slug>` | A shared system your products touch (a GitHub org, a Jira, a data warehouse) and how to reach it. No credentials. |
+| **system resource** | `system:<slug>` | A shared system your products touch (a git host, a tracker, a warehouse) and how to reach it. Access *guidance*, never credentials. |
 | **repository resource** | `repository:<org>/<repo>` | Identity and checkout facts for one code repo. Defined **once**, even when many products use it. |
-| **product profile** | `product:<slug>` | A product's aliases, its relationships to systems and repos, its steward, and task guidance. This is what a product-area `AGENTS.md` declares. |
+| **local reference resource** | `reference:<slug>` | A governed cross-product source the team consults but does not sync. Must answer "how does a reader verify an artifact from here?" |
+| **product profile** | `product:<slug>` | A product's aliases, its relationships to systems/repos/references, its steward, and task guidance. This is what a product-area `AGENTS.md` declares. |
 
-The central pattern: **define a repo or system once, then let many product profiles express their own relationship to it** (which parts they use, when, at what priority). The schema enforces closed shapes, stable IDs, and a text rule that *rejects secrets and absolute machine paths*, so records stay safe to share. See [context-fabric.md](context-fabric.md).
+The central pattern: **define a repo or system once, then let many product profiles express their own relationship to it** (which parts they use, when, at what priority). The schema enforces closed shapes and stable IDs, and *rejects secrets, credentialed URLs, and absolute machine paths*, so records stay safe to share. See [context-fabric.md](context-fabric.md).
+
+Records under `records/generated/` are **projections**, not records: repo digests and the routing card are regenerated by tools and never hand-edited.
 
 ### tools/
-Plain shell scripts (`set -euo pipefail`) that perform approved mechanics, such as materializing checkouts from a reviewed manifest. They are driven by explicit CLI arguments, invoked **by skills** (never free-floating), and safeguard against mistakes (for example, requiring a digest that binds a preview to its apply step, and redacting credentials from output). Harness-agnostic by construction.
+Plain shell (`set -euo pipefail`), driven by explicit CLI arguments, invoked **by skills** rather than free-floating, and dependency-free beyond `git` and `jq` so they run on a machine with no toolchain:
+
+| Tool | What it buys |
+|---|---|
+| `workspace-doctor.sh` | Session-start orientation and capability tiers. Read-only. |
+| `generate-workspace-descriptor.sh` | The declaration, with guards against nesting, duplicates, narrowing re-runs, and a checkout root inside the shared tree. |
+| `generate-repo-digests.sh` | Repository answers for teammates with no git and agents with no checkout. |
+| `refresh-manifest-repos.sh` | Digest-bound preview→apply; fetch and fast-forward only, never pushes. |
+| `route-artifact.sh` | The same placement answer for every teammate, with typed exceptions. |
+| `snapshot-context-fabric-record.sh` | Snapshot + changelog before an edit — the safety net where there is no review gate. |
+| `lint-context-fabric-records.sh` | Field-level record rules, including the syncability preconditions. |
+| `scaffold-product-area.sh` | A compliant, registered product area in one command. |
 
 ### validation/
-A script that checks the invariants after any structural change: every skill in the manifest resolves to a real file, required infra files exist, no secrets are present, no code checkouts or OS metadata leak in, and every JSON record parses. This is what keeps the model from rotting. The kit ships a generalized version at `../scripts/validate-workspace.sh`.
+`check-workspace.sh` is the gate: manifest↔skill consistency, the skill contract, no user-home paths, no sibling-relative cross-root references, thin `AGENTS.md`, no secrets or leaked checkouts, JSON and record lint, `shellcheck`, and the component test suites in `validation/test/`. This is what keeps the model from rotting. The kit also ships a lighter, dependency-free `../scripts/validate-workspace.sh` for Crawl-phase workspaces with no engine installed yet.
 
 ---
 
@@ -118,11 +170,22 @@ The split is by **location and intent** — "does the team rely on this, or am I
 
 ---
 
-## 6. Persistent context across sessions (deferred)
+## 6. Context that compounds across sessions
 
-Workspaces that run many sessions will eventually want context to survive across sessions and PMs. The internal reference implementation does this with a memory loop (`MEMORY.md` index + `memory/*.md`, plus `PROMPT_LOG.md` and `TASKS.md`) — see the reference implementation.
+The model separates context by **load cost**, because anything auto-loaded is paid for in every session:
 
-**The kit intentionally does not prescribe a persistent-context model yet.** The append-everything variant (especially a full prompt log) is token-inefficient for mature projects: anything an agent auto-loads each session must stay tiny, while durable records and audit logs should be loaded on demand or not at all. A token-aware model that separates "always-loaded (tiny)" from "load-on-demand" from "audit-only (never auto-loaded)" is a deliberate future addition, not part of this version. Teams that need session memory today can adopt their harness's own memory feature or a thin, hand-curated `MEMORY.md` index, and should avoid auto-loading unbounded logs.
+| Tier | Where | Loaded |
+|---|---|---|
+| Always-loaded, tiny | `AGENTS.md` files, `CONCEPTS.md` | Every session. Kept thin on purpose; the gate enforces it. |
+| Load-on-demand | `skills/`, `context-fabric/` records, `docs/solutions/` | Only when the task needs them. Can grow without bound. |
+| Audit-only | `records/CHANGELOG.md`, `records/archive/` | Never auto-loaded. Read when reconstructing a decision. |
+
+Two accreting lanes ship with the engine:
+
+- **`docs/solutions/<category>/<slug>.md`** — one file per durable learning (a bug with a non-obvious cause, a workflow trap, a pattern worth reusing), with frontmatter so an agent can judge relevance before reading the body. Load-on-demand, so it costs nothing until it is needed. The engine seeds three real ones that explain why the workspace pattern is shaped the way it is.
+- **`CONCEPTS.md`** — the glossary. Always-loaded, so entries stay to a few sentences and detail moves into a solutions file or a record.
+
+**The kit still does not prescribe an auto-loaded prompt log.** An append-everything log is the exact opposite of the cost ordering above: it grows without bound in the tier you pay for every time. Use your harness's own memory feature for session continuity, and keep unbounded logs out of the always-loaded tier.
 
 ---
 
@@ -144,4 +207,5 @@ Every fact the agent used was written down once and referenced, not repeated. Th
 The internal reference implementation surfaced two ambiguities worth resolving up front in any new workspace:
 
 - **One source of truth.** Skills and Context Fabric records live in the support layer, full stop. Anything in a product folder that looks like shared context is a *pointer* to the support layer, clearly labeled as such. Do not maintain two "active" copies.
-- **One sharing mechanism, chosen on purpose.** Decide git-backed or Drive-backed sharing per team and per phase, and write it down. Do not wire up both halfway. The kit recommends Drive for Crawl (low friction) and git for the support layer at Run (versioned, drift-checkable). See [collaboration-and-governance.md](collaboration-and-governance.md).
+- **One sharing mechanism, chosen on purpose.** Decide git-backed or synced-storage sharing per team and per phase, and write it down in the workspace README. Do not wire up both halfway. The kit recommends synced storage for Crawl (low friction, no terminal) and git for the support layer at Run (versioned, drift-checkable). The choice changes the *safety model*, not just the plumbing: git gives you review and revert, while synced storage makes sync itself the distribution channel — which is why snapshot-first record editing and the "no member-specific harness state in the shared tree" rule exist. See [collaboration-and-governance.md](collaboration-and-governance.md).
+- **No machine paths in shared files.** Per-machine locations live in one machine-local declaration and are referenced by binding token everywhere else. This is what lets the same workspace work for a teammate who organizes their disk differently — which is every teammate.

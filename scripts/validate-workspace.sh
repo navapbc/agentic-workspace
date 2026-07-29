@@ -1,6 +1,10 @@
 #!/bin/sh
 # Check a shared agentic workspace for the invariants that keep it safe and consistent.
-# Generalized from an internal validation script.
+#
+# This is the LIGHTWEIGHT, Crawl-phase check: POSIX sh, no dependencies beyond what is
+# already on the machine, and it works on a workspace with no support engine installed.
+# Once agentic-support/ exists, its own gate is the authority and checks far more:
+#   <workspace>/agentic-support/validation/check-workspace.sh
 #
 # Usage:
 #   ./validate-workspace.sh [workspace-dir]   (default: current directory)
@@ -54,9 +58,9 @@ if search "$secret_pat" >/dev/null 2>&1; then
   err "possible secret/token found:"; search "$secret_pat" >&2 || true
 else ok "no token-shaped secrets"; fi
 
-# A real 1Password reference looks like op://<vault>/<item>...; a bare "op://" in prose does not.
+# A real secret-manager reference looks like op://<vault>/<item>...; a bare "op://" in prose does not.
 if search 'op://[A-Za-z0-9._-]+/[A-Za-z0-9._-]+' >/dev/null 2>&1; then
-  err "1Password op:// reference found; inject secrets at runtime, do not store references:"
+  err "secret-manager reference found; inject secrets at runtime, do not store references:"
   search 'op://[A-Za-z0-9._-]+/[A-Za-z0-9._-]+' >&2 || true
 else ok "no op:// references"; fi
 
@@ -76,7 +80,8 @@ else ok "no nested code checkouts"; fi
 
 # 4. Absolute machine paths in shared markdown (bindings should be used instead).
 if search '/Users/[A-Za-z]|/home/[A-Za-z]' >/dev/null 2>&1; then
-  note "absolute machine path(s) in files; prefer bindings (\${SUPPORT_ROOT}, ...)"
+  # shellcheck disable=SC2016  # binding tokens are literals here, not expansions
+  note 'absolute machine path(s) in files; prefer binding tokens (${AGENTIC_SUPPORT_ROOT}, ${AGENTIC_REPO_CHECKOUT_ROOT}, ...)'
 else ok "no absolute machine paths"; fi
 
 # 5. JSON parseability. Collect failures in a temp file so the count survives the loop.

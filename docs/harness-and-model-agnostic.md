@@ -9,7 +9,7 @@ last_updated: 2026-07-22
 
 A shared workspace is worthless if it only works for the person who built it, on the tool they happen to use. This kit is built so that any teammate, on any capable agent tool, backed by any capable model, gets the same context and the same procedures.
 
-"Harness" means the agent tool: Claude Code, Codex, OpenCode, Cursor, and successors. "Model" means the LLM behind it.
+"Harness" means the agent tool: Codex (OpenAI's agent, now offered through ChatGPT), Claude Code, OpenCode, Cursor, and successors. "Model" means the LLM behind it.
 
 ---
 
@@ -63,7 +63,7 @@ Plain shell with `set -euo pipefail`, driven by explicit CLI arguments. No depen
 
 Two mechanisms:
 
-- **Bindings** replace hardcoded absolute paths with named variables (`${SUPPORT_ROOT}`, etc.), set once per machine in a `bindings.env` that is never shared. See [local-setup.md](local-setup.md).
+- **Binding tokens** replace hardcoded absolute paths with named variables (`${AGENTIC_SUPPORT_ROOT}`, `${AGENTIC_REPO_CHECKOUT_ROOT}`, …), resolved per machine through a declaration in the member's home directory that is never synced or committed. See [local-setup.md](local-setup.md) and the engine's `docs/skill-binding-contract.md`.
 - **Relative references** between layers. A product folder points to the support layer by relative path, so the whole tree relocates cleanly.
 
 ---

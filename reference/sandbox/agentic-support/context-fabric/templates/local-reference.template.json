@@ -1,0 +1,25 @@
+{
+  "_comment": "LOCAL REFERENCE RESOURCE template. A governed, cross-product source the team consults but does not sync as a repository: a design-system standard, an architecture catalog, a runbook library, a policy reference set. Save to records/resources/local/<slug>.json. Remove all _comment fields before saving.",
+  "_comment_admission": "Admit only a governed source with its own status or freshness signal. A broad container ('the shared drive'), a work-in-progress lane, or an operational capability never qualifies — those cannot answer relianceCheck, and a reference source you cannot verify is folklore with a URL.",
+  "kind": "localReferenceResource",
+  "id": "reference:{{reference-slug}}",
+  "schemaVersion": "1.0.0",
+  "updatedAt": "{{YYYY-MM-DD}}",
+  "contentLocations": [
+    { "path": "records/resources/local/{{reference-slug}}.json" }
+  ],
+  "name": "{{Human-readable name of the reference source}}",
+  "description": "{{What this source is, in one or two sentences.}}",
+  "location": "{{workspace-relative path or binding token — never an absolute machine path}}",
+  "consultationUse": "{{The one class of question this source answers. If you cannot state it in a sentence, it is a container, not a reference source.}}",
+  "relianceCheck": "{{How a reader confirms an artifact here is still safe to rely on: a status registry, a freshness date, a validation report.}}",
+  "provenance": {
+    "source": "{{where this fact came from}}",
+    "addedBy": "{{name}}"
+  },
+  "validation": {
+    "status": "{{validated | unvalidated | disputed}}",
+    "validatedBy": "{{name}}",
+    "validatedAt": "{{YYYY-MM-DD}}"
+  }
+}

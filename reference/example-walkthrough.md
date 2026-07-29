@@ -40,7 +40,7 @@ Because she uses Claude Code, the scaffold also created a `CLAUDE.md` that just 
 Marcus needs in, and they keep repeating the same "draft a notice-change brief" procedure by hand.
 
 1. **Share it.** They put the workspace in a shared Google Drive folder (Crawl-phase default; low friction). Marcus syncs it and points Codex at the root `AGENTS.md`.
-2. **Stand up the support layer.** Priya runs the scaffold again with `--with-support`, or copies `templates/skills/` and `templates/context-fabric/` into a new `agentic-support/` folder.
+2. **Stand up the support layer.** Priya runs `scripts/install-support.sh <workspace>`, which installs the whole engine — skills, Context Fabric, tools, validation — and leaves her two authored files (`CONCEPTS.md`, `docs/context-source-ladder.md`) for her to fill in.
 3. **Write the first skill.** They turn the brief procedure into `agentic-support/skills/notice-change-brief/SKILL.md` from the example template: triggers, required context, the steps, the output shape, guardrails. They register it in `skill-manifest.yaml`.
 4. **Sync.** Each of them runs `./sync-skills.sh --target all` once, so Claude Code and Codex both have the skill. Now Marcus on Codex and Priya on Claude Code run the *same* procedure and get the *same* brief.
 5. **First Context Fabric profile.** BN reads from an upstream "Eligibility" system and lives in two repos. They create a `system:eligibility` record, two `repository:` records, and a `product:benefits-notices` profile that references them with tiers and `useWhen` triggers. They add `Context Fabric profile: product:benefits-notices` to the workspace's product-area `AGENTS.md`.

@@ -1,0 +1,24 @@
+{
+  "_comment": "SYNC MANIFEST template. The reviewed list of repositories a product hydrates locally. Consumed by tools/refresh-manifest-repos.sh and the repo-sync skill. Save to records/sync-manifests/releases/<product>/<YYYY-MM-DD>.json. Remove all _comment fields before saving.",
+  "_comment_review": "A manifest is a REVIEWED artifact: reviewedBy and updatedAt are what make it safe to run. An unreviewed manifest is just a list. Amend it through review, never by editing it to make a blocked repository pass.",
+  "productId": "product:{{product-slug}}",
+  "version": "{{YYYY-MM-DD}}",
+  "updatedAt": "{{YYYY-MM-DD}}",
+  "reviewedBy": "{{name of the person who reviewed this list}}",
+  "catalogReferences": [
+    "{{repository:<org>/<repo> — the Context Fabric records this manifest was derived from}}"
+  ],
+  "repositories": [
+    {
+      "_comment": "id must match the Context Fabric repositoryResource id. url must match the checkout's actual origin remote — the tool refuses to repoint an existing checkout. checkoutDirectory is a bare basename resolved under the declared checkout root.",
+      "id": "repository:{{org}}/{{repo}}",
+      "url": "https://{{host}}/{{org}}/{{repo}}",
+      "checkoutDirectory": "{{repo}}"
+    }
+  ],
+  "_comment_localPathException": "Only for the rare case of hydrating from a local path rather than a remote. Both fields are required together; the tool refuses a bare local path otherwise. Delete this block if unused.",
+  "localPathException": {
+    "allowed": false,
+    "reason": "{{why a local path is necessary here}}"
+  }
+}

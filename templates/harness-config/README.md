@@ -2,17 +2,17 @@
 
 How to point each agent tool at a shared workspace. The bridge is always `AGENTS.md`.
 
-## OpenCode
+## Codex (ChatGPT)
 
-Drop `opencode.json` (in this folder) at the workspace root. It loads `AGENTS.md` as instructions and the workspace `skills/` directory. Restart OpenCode only if it doesn't pick up an updated workspace skill.
-
-## Codex
-
-Codex reads `AGENTS.md` directly and can consume the shared `SKILL.md` bundle without a separate adapter. Point Codex at the workspace root. Runtime skill copies (from the sync script) default to `~/.agents/skills`.
+Codex is OpenAI's coding agent, now offered through ChatGPT. It reads `AGENTS.md` directly and can consume the shared `SKILL.md` bundle without a separate adapter. Point Codex at the workspace root. Runtime skill copies (from the sync script) default to `~/.agents/skills`.
 
 ## Claude Code
 
 Claude Code reads `CLAUDE.md`, **not** `AGENTS.md`. In each folder with an `AGENTS.md`, add a `CLAUDE.md` containing just `@AGENTS.md`; Claude Code expands the import at session start, so you maintain only `AGENTS.md`. Skills sync into `~/.claude/skills`. No project config file is required to pick up `CLAUDE.md`.
+
+## OpenCode
+
+Drop `opencode.json` (in this folder) at the workspace root. It loads `AGENTS.md` as instructions and the workspace `skills/` directory. Restart OpenCode only if it doesn't pick up an updated workspace skill.
 
 ## Cursor and other tools
 

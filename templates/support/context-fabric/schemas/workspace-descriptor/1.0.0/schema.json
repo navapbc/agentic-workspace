@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workspace-descriptor/1.0.0/schema.json",
+  "title": "Agentic workspace descriptor",
+  "description": "Machine-local declaration of a member's workspace roots, written by tools/generate-workspace-descriptor.sh and read by the workspace doctor, the digest generator, and the setup skill. The on-disk form is flat, grep-parsable YAML — one scalar 'KEY: value' line per binding, no nesting — kept deliberately parseable with bash and standard Unix tools only, so it works on a machine with no toolchain installed. Values are absolute paths and legitimately machine-specific; the file is never synced, shared, or committed. This schema documents the logical shape those flat keys must satisfy.",
+  "type": "object",
+  "required": [
+    "descriptor_version",
+    "generated_at",
+    "AGENTIC_SUPPORT_ROOT",
+    "AGENTIC_CONTEXT_FABRIC_ROOT",
+    "AGENTIC_REPO_CHECKOUT_ROOT",
+    "AGENTIC_WORKING_MATERIALS_ROOT_1"
+  ],
+  "properties": {
+    "descriptor_version": { "const": 1 },
+    "generated_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "AGENTIC_WORKSPACE_ROOT": {
+      "$ref": "#/$defs/absolutePath",
+      "description": "The shared workspace root. Optional compatibility context per docs/skill-binding-contract.md; never a source to derive other bindings from."
+    },
+    "AGENTIC_SUPPORT_ROOT": { "$ref": "#/$defs/absolutePath" },
+    "AGENTIC_CONTEXT_FABRIC_ROOT": { "$ref": "#/$defs/absolutePath" },
+    "AGENTIC_PRODUCT_WORK_ROOT": {
+      "$ref": "#/$defs/absolutePath",
+      "description": "Present only when the member declared the product-work lane as a working-materials root. Role-based, never machine-wide."
+    },
+    "AGENTIC_REPO_CHECKOUT_ROOT": {
+      "$ref": "#/$defs/absolutePath",
+      "description": "Declared machine-local git checkout root. Must sit outside every shared or synced tree."
+    }
+  },
+  "patternProperties": {
+    "^AGENTIC_WORKING_MATERIALS_ROOT_[1-9][0-9]*$": {
+      "$ref": "#/$defs/absolutePath",
+      "description": "Ordered declared working-materials roots; the first entry is the default output destination."
+    },
+    "^AGENTIC_EXTRA_ROOT_[1-9][0-9]*$": {
+      "$ref": "#/$defs/absolutePath",
+      "description": "Ordered member-chosen extra roots; informational to validation."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "absolutePath": {
+      "type": "string",
+      "minLength": 2,
+      "pattern": "^(/|[A-Za-z]:[\\\\/]).+"
+    }
+  }
+}

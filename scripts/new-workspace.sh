@@ -6,12 +6,17 @@
 #
 #   --name          workspace folder name (required)
 #   --dir           parent directory to create it in (default: current directory)
-#   --with-support  also scaffold the Walk-phase support layer (skills/ + context-fabric/)
+#   --with-support  also install the support engine (skills, Context Fabric, tools,
+#                   validation) via install-support.sh — the Walk/Run phases
 #
-# Creates a Crawl-phase workspace: thin AGENTS.md (+ CLAUDE.md mirror), README,
+# Creates a Crawl-phase workspace: thin AGENTS.md (+ CLAUDE.md import), README,
 # the suggested docs lanes, and the product-work/ and prototyping/ lanes.
 # Directory names follow the kit's kebab-case standard (see docs/directory-and-naming-standard.md).
 # Fill in the placeholders afterward; keep AGENTS.md thin.
+#
+# Machine-local paths are NOT configured here. They are declared per machine by
+# agentic-support/tools/generate-workspace-descriptor.sh (or the workspace-setup
+# skill, which interviews you) and never stored in the shared tree.
 
 set -eu
 
@@ -57,8 +62,8 @@ substitute "$tpl/AGENTS.md.template" "$ws/AGENTS.md"
 # AGENTS.md stays the single source of truth (no duplicate content to keep in sync).
 printf '@AGENTS.md\n' > "$ws/CLAUDE.md"
 substitute "$tpl/README.md.template" "$ws/README.md"
-substitute "$tpl/bindings.env.template" "$ws/bindings.env.template"
 cp "$tpl/docs/README.md" "$ws/docs/README.md"
+substitute "$tpl/product-work/area-manifest.yaml.template" "$ws/product-work/area-manifest.yaml"
 
 # Suggested docs lanes (rename, drop, or add your own — see docs/README.md).
 for lane in ideation plans solutions; do
@@ -66,13 +71,7 @@ for lane in ideation plans solutions; do
 done
 
 if [ "$with_support" -eq 1 ]; then
-  mkdir -p "$ws/agentic-support/skills" \
-           "$ws/agentic-support/context-fabric/records/systems" \
-           "$ws/agentic-support/context-fabric/records/resources" \
-           "$ws/agentic-support/context-fabric/records/profiles" \
-           "$ws/agentic-support/context-fabric/templates"
-  cp -R "$kit_dir/templates/skills/." "$ws/agentic-support/skills/"
-  cp -R "$kit_dir/templates/context-fabric/." "$ws/agentic-support/context-fabric/templates/"
+  "$kit_dir/scripts/install-support.sh" "$ws" >/dev/null
   cp "$kit_dir/templates/harness-config/opencode.json" "$ws/opencode.json"
 fi
 
@@ -81,7 +80,13 @@ printf 'Next:\n'
 printf '  1. Edit "%s/AGENTS.md" (and CLAUDE.md) to set boundaries and vocabulary. Keep it thin.\n' "$name"
 printf '  2. Point your agent tool at the workspace (see the kit docs/local-setup.md).\n'
 if [ "$with_support" -eq 1 ]; then
-  printf '  3. Rename the example-skill directory and register real skills in skill-manifest.yaml.\n'
-  printf '  4. Author Context Fabric records from "agentic-support/context-fabric/templates/".\n'
+  printf '  3. Author your two files: agentic-support/CONCEPTS.md and agentic-support/docs/context-source-ladder.md.\n'
+  printf '  4. Declare your roots, then check: ask your agent to run the workspace-setup skill,\n'
+  printf '     or run "%s/agentic-support/tools/generate-workspace-descriptor.sh --help".\n' "$ws"
+  printf '  5. Rename example-skill and register real skills in skills/skill-manifest.yaml.\n'
+  printf '  Gate it any time with: "%s/agentic-support/validation/check-workspace.sh"\n' "$ws"
+else
+  printf '  3. Add the support engine when you need shared skills or facts:\n'
+  printf '     "%s/scripts/install-support.sh" "%s"\n' "$kit_dir" "$ws"
+  printf '  Validate any time with: "%s/scripts/validate-workspace.sh" "%s"\n' "$kit_dir" "$ws"
 fi
-printf '  Validate any time with: "%s/scripts/validate-workspace.sh" "%s"\n' "$kit_dir" "$ws"

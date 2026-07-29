@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "workspace-context/1.0.0/schema.json",
+  "title": "Agentic workspace context record",
+  "description": "One record = one shared fact. Four kinds, discriminated by `kind`. Shapes are CLOSED (additionalProperties false) so a typo becomes an error instead of a silently ignored field, and every text value is checked against patterns that reject secrets and absolute machine paths — records are shared verbatim with every teammate, so a leaked token or a machine-specific path is everyone's problem. Define a repository or system ONCE, then let many product profiles express their own relationship to it.",
+  "oneOf": [
+    { "$ref": "#/$defs/productProfile" },
+    { "$ref": "#/$defs/repositoryResource" },
+    { "$ref": "#/$defs/systemResource" },
+    { "$ref": "#/$defs/localReferenceResource" }
+  ],
+  "$defs": {
+    "safeText": {
+      "type": "string",
+      "minLength": 1,
+      "allOf": [
+        {
+          "not": { "pattern": "(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-|-----BEGIN [A-Z ]*PRIVATE KEY-----)" },
+          "description": "No token-shaped values."
+        },
+        {
+          "not": { "pattern": "(^|[\\s\"'(])(/Users/|/home/|[A-Za-z]:\\\\)" },
+          "description": "No absolute machine paths. Use a binding token such as ${AGENTIC_REPO_CHECKOUT_ROOT}."
+        },
+        {
+          "not": { "pattern": "://[^/@\\s]+:[^/@\\s]+@" },
+          "description": "No credentials embedded in URLs."
+        }
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}([T ][0-9]{2}:[0-9]{2}:[0-9]{2}Z?)?$"
+    },
+    "contentLocations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^records/[A-Za-z0-9._/-]+\\.json$",
+            "description": "This record's own path relative to context-fabric/. The lint fails on drift, which is how a copied record gets caught before it becomes a second source of truth."
+          },
+          "note": { "$ref": "#/$defs/safeText" }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": { "$ref": "#/$defs/safeText" },
+        "addedBy": { "$ref": "#/$defs/safeText" },
+        "addedAt": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": ["validated", "unvalidated", "disputed"],
+          "description": "`validated` is a claim that a named person confirmed this against the real system on a date. Syncability depends on it."
+        },
+        "validatedBy": { "$ref": "#/$defs/safeText" },
+        "validatedAt": { "$ref": "#/$defs/timestamp" },
+        "note": { "$ref": "#/$defs/safeText" }
+      }
+    },
+    "commonFields": {
+      "kind": { "type": "string" },
+      "schemaVersion": { "const": "1.0.0" },
+      "updatedAt": { "$ref": "#/$defs/timestamp" },
+      "contentLocations": { "$ref": "#/$defs/contentLocations" },
+      "provenance": { "$ref": "#/$defs/provenance" },
+      "validation": { "$ref": "#/$defs/validation" }
+    },
+
+    "productProfile": {
+      "type": "object",
+      "required": ["kind", "id", "schemaVersion", "updatedAt", "contentLocations", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "productProfile" },
+        "id": { "type": "string", "pattern": "^product:[a-z0-9][a-z0-9-]*$" },
+        "schemaVersion": { "$ref": "#/$defs/commonFields/schemaVersion" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "contentLocations": { "$ref": "#/$defs/contentLocations" },
+        "name": { "$ref": "#/$defs/safeText" },
+        "description": { "$ref": "#/$defs/safeText" },
+        "aliases": { "type": "array", "items": { "$ref": "#/$defs/safeText" } },
+        "maintainers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "$ref": "#/$defs/safeText" },
+              "role": { "$ref": "#/$defs/safeText" }
+            }
+          }
+        },
+        "systems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["systemId"],
+            "additionalProperties": false,
+            "properties": {
+              "systemId": { "type": "string", "pattern": "^system:[a-z0-9][a-z0-9-]*$" },
+              "useWhen": { "$ref": "#/$defs/safeText" },
+              "anchors": {
+                "type": "array",
+                "description": "Exact, validated homes inside the system: a tracker project key, a wiki page ID, a folder. Anchors are what stop an agent from searching an entire system.",
+                "items": {
+                  "type": "object",
+                  "required": ["type", "value"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": { "$ref": "#/$defs/safeText" },
+                    "value": { "$ref": "#/$defs/safeText" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["resourceId"],
+            "additionalProperties": false,
+            "properties": {
+              "resourceId": { "type": "string", "pattern": "^repository:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+              "alias": { "$ref": "#/$defs/safeText" },
+              "selectionTier": { "enum": ["primary", "supporting", "conditional"] },
+              "coverage": { "enum": ["direct", "reference"] },
+              "useWhen": { "$ref": "#/$defs/safeText" },
+              "pathScope": { "type": "array", "items": { "$ref": "#/$defs/safeText" } }
+            }
+          }
+        },
+        "referenceResources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["resourceId"],
+            "additionalProperties": false,
+            "properties": {
+              "resourceId": { "type": "string", "pattern": "^reference:[a-z0-9][a-z0-9-]*$" },
+              "useWhen": { "$ref": "#/$defs/safeText" },
+              "relianceCheck": {
+                "$ref": "#/$defs/safeText",
+                "description": "How a reader confirms an artifact from this source is still safe to rely on. A reference source without a reliance check is folklore with a URL."
+              }
+            }
+          }
+        },
+        "taskGuidance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "synthesisBelongsIn": { "$ref": "#/$defs/safeText" },
+            "notes": { "$ref": "#/$defs/safeText" }
+          }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "validation": { "$ref": "#/$defs/validation" }
+      }
+    },
+
+    "repositoryResource": {
+      "type": "object",
+      "required": ["kind", "id", "schemaVersion", "updatedAt", "contentLocations", "organization", "repository", "url", "lifecycle", "accessState"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "repositoryResource" },
+        "id": {
+          "type": "string",
+          "pattern": "^repository:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "description": "Must equal repository:<organization>/<repository>. The lint enforces it."
+        },
+        "schemaVersion": { "$ref": "#/$defs/commonFields/schemaVersion" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "contentLocations": { "$ref": "#/$defs/contentLocations" },
+        "organization": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "system": { "type": "string", "pattern": "^system:[a-z0-9][a-z0-9-]*$" },
+        "url": {
+          "type": "string",
+          "pattern": "^https://[A-Za-z0-9._-]+/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "description": "https://<host>/<organization>/<repository>. Host-agnostic on purpose."
+        },
+        "description": { "$ref": "#/$defs/safeText" },
+        "checkoutDirectory": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$",
+          "description": "A bare basename, resolved under the member's declared checkout root. Never a path."
+        },
+        "lifecycle": { "enum": ["active", "anticipated", "unavailable", "deprecated", "retired", "excluded"] },
+        "accessState": { "enum": ["available", "request-required", "unavailable"] },
+        "syncable": {
+          "type": "boolean",
+          "description": "true requires lifecycle active + accessState available + validation.status validated. The lint enforces it, so 'we sync this' cannot be asserted about a repository nobody has confirmed."
+        },
+        "stewardship": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "owner": { "$ref": "#/$defs/safeText" },
+            "note": { "$ref": "#/$defs/safeText" }
+          }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "validation": { "$ref": "#/$defs/validation" }
+      }
+    },
+
+    "systemResource": {
+      "type": "object",
+      "required": ["kind", "id", "schemaVersion", "updatedAt", "contentLocations", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "systemResource" },
+        "id": { "type": "string", "pattern": "^system:[a-z0-9][a-z0-9-]*$" },
+        "schemaVersion": { "$ref": "#/$defs/commonFields/schemaVersion" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "contentLocations": { "$ref": "#/$defs/contentLocations" },
+        "name": { "$ref": "#/$defs/safeText" },
+        "description": { "$ref": "#/$defs/safeText" },
+        "ownership": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "owner": { "$ref": "#/$defs/safeText" },
+            "contact": { "$ref": "#/$defs/safeText" }
+          }
+        },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+              "type": { "enum": ["web", "api", "cli", "git", "issue-tracker", "wiki", "data-warehouse", "other"] },
+              "url": { "$ref": "#/$defs/safeText" },
+              "accessGuidance": {
+                "$ref": "#/$defs/safeText",
+                "description": "How to obtain access. Never the credential itself."
+              },
+              "validationStatus": { "enum": ["validated", "unvalidated", "disputed"] }
+            }
+          }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "validation": { "$ref": "#/$defs/validation" }
+      }
+    },
+
+    "localReferenceResource": {
+      "type": "object",
+      "description": "A governed, cross-product reference source the team consults but does not sync as a repository: a design-system standard, an architecture catalog, a runbook library. Broad containers, work-in-progress lanes, and operational capability never qualify.",
+      "required": ["kind", "id", "schemaVersion", "updatedAt", "contentLocations", "name", "consultationUse", "relianceCheck"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "localReferenceResource" },
+        "id": { "type": "string", "pattern": "^reference:[a-z0-9][a-z0-9-]*$" },
+        "schemaVersion": { "$ref": "#/$defs/commonFields/schemaVersion" },
+        "updatedAt": { "$ref": "#/$defs/timestamp" },
+        "contentLocations": { "$ref": "#/$defs/contentLocations" },
+        "name": { "$ref": "#/$defs/safeText" },
+        "description": { "$ref": "#/$defs/safeText" },
+        "location": {
+          "$ref": "#/$defs/safeText",
+          "description": "Where the source lives, expressed as a workspace-relative path or a binding token — never an absolute machine path."
+        },
+        "consultationUse": {
+          "$ref": "#/$defs/safeText",
+          "description": "What class of question this source answers. If you cannot state it in one sentence, it is a container, not a reference source."
+        },
+        "relianceCheck": {
+          "$ref": "#/$defs/safeText",
+          "description": "How a reader confirms an artifact here is still safe to rely on: a status registry, a freshness date, a validation report."
+        },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "validation": { "$ref": "#/$defs/validation" }
+      }
+    }
+  }
+}

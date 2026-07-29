@@ -1,0 +1,44 @@
+version: 1
+
+# The discovery and availability authority for this workspace's skills.
+#
+# `skills/<id>/SKILL.md` is the source of truth for behavior. This file decides
+# what exists and whether it is runnable. Add or remove an entry in the SAME change
+# as its canonical skill — validation/check-workspace.sh fails on a mismatch in
+# either direction.
+#
+# Each entry:
+#   id      the skill's directory name AND its SKILL.md `workflow_id`. All three match.
+#   path    <id>/SKILL.md
+#   status  enabled | partially-paused | paused
+#   review_by  required for partially-paused and paused: the date the pause gets
+#              revisited. The workspace doctor flags overdue reviews at session start,
+#              so a pause is a decision with a deadline rather than a permanent gap.
+#
+# A skill's own frontmatter `status` describes its local workflow state and never
+# overrides availability here.
+
+source_of_truth: agentic-support/skills
+
+skills:
+  - id: workspace-setup
+    path: workspace-setup/SKILL.md
+    status: enabled
+  - id: artifact-routing
+    path: artifact-routing/SKILL.md
+    status: enabled
+  - id: repo-sync
+    path: repo-sync/SKILL.md
+    status: enabled
+  # Rename this to your first real capability. The directory under skills/ must match.
+  - id: example-skill
+    path: example-skill/SKILL.md
+    status: paused
+    review_by: '{{YYYY-MM-DD}}'
+
+# Where each harness expects runtime skill copies, for sync-skills.sh.
+# Harnesses that read the shared bundle directly need no entry.
+targets:
+  codex: ~/.agents/skills
+  claude: ~/.claude/skills
+  opencode: ~/.config/opencode/skills

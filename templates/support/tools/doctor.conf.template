@@ -1,0 +1,10 @@
+# Optional workspace doctor configuration. Copy to doctor.conf and edit.
+#
+# Session environment variables that unlock a capability tier — typically tokens
+# for a tracker, wiki, or internal API that the team reaches through an agent.
+# The doctor reports each as set or not set. It NEVER reads or prints the value.
+CREDENTIAL_ENV_VARS=""
+
+# What to tell a member whose credential is not loaded. Point at the skill or
+# runbook that walks them through it; never inline the credential flow here.
+CREDENTIAL_UNLOCK_HINT=""

@@ -1,0 +1,23 @@
+# Product-area registry for {{WORKSPACE_NAME}}.
+#
+# One entry per area. `agentic-support/tools/route-artifact.sh` reads this file, so an
+# unregistered area gets a "stop and ask" instead of a guess — which is the right
+# answer when nobody has said who owns the artifact.
+#
+# `agentic-support/tools/scaffold-product-area.sh <slug> "<Display Name>"` appends an
+# entry for you.
+#
+# Exceptions are TYPED, not free text, so routing stays deterministic:
+#   variance       — this area prefers a stronger lane than the default for this type
+#   grandfathered  — a legacy lane that stays extend-only; never expand its scope
+# Every exception carries a rationale. An exception without a reason becomes folklore
+# that outlives the situation that justified it.
+
+areas:
+  - id: {{area-slug}}
+    profile: product:{{area-slug}}
+    steward: {{name — not "unassigned" once the area is real}}
+    # exceptions:
+    #   - type: variance
+    #     lanes: [docs/plans]
+    #     rationale: {{why this area routes differently}}

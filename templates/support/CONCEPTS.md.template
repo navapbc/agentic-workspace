@@ -1,0 +1,87 @@
+# Concepts
+
+Shared vocabulary for this workspace — entities, named processes, and status
+concepts with project-specific meaning. **This is one of two files you author
+yourself** (the other is `docs/context-source-ladder.md`); everything else in the
+support tree installs verbatim.
+
+Seeded below with the workspace-pattern vocabulary the kit ships, then accretes as
+your team documents learnings. Direct edits are fine. Glossary only — not a spec,
+not a catch-all. It is read often, so keep entries to a few sentences and move
+detail into a `docs/solutions/` file or a Context Fabric record.
+
+Add your own section for your domain vocabulary: the acronyms, system names, and
+status terms an agent must not guess at.
+
+## Workspace pattern
+
+### Multi-Root Workspace
+The pattern in which an agent session attaches several physical directories at
+once — shared synced roots plus machine-local roots — instead of assembling them
+under one combined folder. Replaced the retired symlink-assembled root, whose
+linked contents harness file viewers could not display.
+
+### Shared Root
+A workspace root every teammate sees. When it lives on synced storage rather than
+in git, sync is both the versioning and the distribution channel: there is no
+review step and no diff, so any file written under it reaches every teammate's
+mount silently. Member-specific harness configuration must never be written inside
+one.
+
+### Primary Folder
+The single folder an agent harness treats as its project scope for a session. The
+harness persists session-local state — permission grants, local settings overrides
+— beneath it, and recreates that state on later sessions. The primary folder must
+be machine-local, never a shared synced root.
+
+### Launch Shape
+How a session is started: which folder is the Primary Folder and which additional
+roots are attached, persistently in user scope or per-session. The durable defense
+against leaking personal harness state into a shared root lives at launch-shape
+level, because detection tooling can only warn after a bad shape has already
+written files.
+
+### Workspace Descriptor
+The machine-local declaration of where a member's workspace roots live. Every
+machine-local root is declared explicitly by the member — never inferred from
+sibling directories or directory shape — and the descriptor stays on that machine;
+it is never synced, shared, or committed.
+
+Tools that need a machine-local root resolve it from the declaration and fail
+closed when it is absent, stale, or invalid: a missing declaration stops the
+operation instead of falling back to a guess. Regeneration must carry forward the
+full set of previously declared roots — a re-run cannot silently narrow the
+declaration. Lanes inside the shared workspace tree are the scoped exception: they
+are physical siblings of the support tree and may be derived from its location.
+
+### Binding Token
+A named placeholder that shared documents use to reference a machine-local root
+(`${AGENTIC_REPO_CHECKOUT_ROOT}`), resolved on each reader's machine through the
+Workspace Descriptor. Binding tokens replace sibling-relative paths, which stopped
+resolving once workspace roots ceased to share a common parent.
+
+### Workspace Doctor
+The diagnostic that reports whether a member's workspace matches the declared
+multi-root pattern — support tree resolvable, machine-local roots validly declared,
+no member-specific harness configuration inside a shared root — and which
+capability tiers the session has. It warns on recoverable violations (a harness can
+recreate them) and fails only when the workspace cannot be resolved or its
+declaration is invalid.
+
+### Capability Tier
+A band of things a session can do, gated on what is actually present: shared
+context (no git needed), repo questions from digests (no git needed), checkout
+inspection (git plus hydrated checkouts), checkout refresh, and any credentialed
+external access. The doctor reports each tier as available or locked, with the one
+concrete step that unlocks it.
+
+### Repo Digest
+A generated per-repository summary — purpose, top-level layout, last-refreshed
+commit, freshness dates — stored in shared context so repository questions can be
+answered with no git installed and no checkout open. Orientation only; deeper
+questions drop to the checkout.
+
+## {{Your domain}}
+
+### {{Term}}
+{{Definition. Start with the terms your team explains to every new joiner.}}

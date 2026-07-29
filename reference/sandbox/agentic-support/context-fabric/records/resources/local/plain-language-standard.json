@@ -1,0 +1,14 @@
+{
+  "kind": "localReferenceResource",
+  "id": "reference:plain-language-standard",
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-07-29",
+  "contentLocations": [{ "path": "records/resources/local/plain-language-standard.json" }],
+  "name": "Plain-Language Standard (fictional)",
+  "description": "The governed writing standard every outbound notice is reviewed against.",
+  "location": "${AGENTIC_WORKING_MATERIALS_ROOT_1}/standards/plain-language",
+  "consultationUse": "Whether a proposed notice wording meets the organization's plain-language bar.",
+  "relianceCheck": "Each rule carries a review date in the standard's own registry. A rule past its review date is treated as unavailable.",
+  "provenance": { "source": "sandbox seed", "addedBy": "kit" },
+  "validation": { "status": "validated", "validatedBy": "kit", "validatedAt": "2026-07-29" }
+}

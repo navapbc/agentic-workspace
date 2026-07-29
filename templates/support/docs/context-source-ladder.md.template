@@ -1,0 +1,50 @@
+---
+purpose: Which source to consult first for a given question, the declared alternate when it is unavailable, and what never to bulk-load.
+audience: Every agent session; maintained by the workspace steward.
+status: Template — fill in the rows for your team's actual sources.
+---
+
+# Context-source ladder
+
+**This is one of two files you author yourself** (the other is `CONCEPTS.md`).
+Everything else in the support tree installs verbatim. Fill in the rows below with
+your team's real sources, keep a compact copy of the table in the workspace root
+`AGENTS.md`, and re-tune both together whenever a source class appears or retires.
+
+The shape is deliberate: a **primary**, a **declared alternate**, and a **reserve
+discipline**. Improvised fallbacks — broad catalog scans, neighboring checkouts,
+unscoped searches — are what turn a cheap question into an expensive session, so
+every branch names its approved alternate up front instead of dead-stopping and
+letting the agent invent one.
+
+## The ladder
+
+Replace these rows. The first three are near-universal; the rest are examples of
+the *shape* a row takes.
+
+| Question class | Primary | Declared alternate |
+|---|---|---|
+| Repo purpose or layout (which repo, what is in it) | Repo digests (`context-fabric/records/generated/repo-digests/`) | Hydrated checkout under `${AGENTIC_REPO_CHECKOUT_ROOT}/` |
+| Code-level detail (APIs, logic, config) | Hydrated checkout (hydrate via a reviewed sync manifest) | Digest for orientation + an explicit note that checkout inspection is needed |
+| System / ownership fact (which system, who runs it, how systems relate) | Context Fabric records (`context-fabric/records/`) | Ask the named system steward |
+| {{Governed domain fact — policy, standard, regulation}} | {{Your governed reference source; check its own status/freshness signal before relying}} | {{Web search, cited, with a note that the source lacked coverage}} |
+| {{Product decision history or prior synthesis}} | {{The product area's `docs/` lanes}} | {{Ask the area steward}} |
+| {{Live tickets / wiki pages}} | {{Your tracker, only when the doctor's capability report shows the credential loaded}} | {{Ask the user to fetch or paste; do not guess at ticket contents}} |
+| External / current-events context | Web search with citations | — |
+
+## Reserve discipline (token budget)
+
+- Load the specific record, digest, or file section that answers the question —
+  never a whole reference bundle, a full catalog, or an entire repository tree.
+- Prefer generated summaries (digests, census records, status reports) over raw
+  sources when the question is orientation-level; drop to raw sources only for
+  detail the summary cannot carry.
+- Inspect before reading in full: listings, manifests, and frontmatter first.
+- A freshness-gated source past its `do_not_rely_after` date is treated as
+  **unavailable**: use the declared alternate and say why.
+
+## Maintenance
+
+Add a row when a source class appears (the repo-digest row entered the day digests
+shipped; an MCP-backed source would add its own). Update the compact copy in the
+workspace root `AGENTS.md` in the same change — the two must not drift.

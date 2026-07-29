@@ -4,26 +4,37 @@
 
 Scope: Shared product workspace for the fictional Benefits Notices (BN) team. Example only.
 
+**This is one root of a multi-root workspace** — sessions normally also see a machine-local
+repo-checkouts root and one or more working-materials roots. Run
+`agentic-support/tools/workspace-doctor.sh` at session start; root roles are in
+`agentic-support/docs/workspace-routing.md`.
+
 ## Boundaries
 
 - Product docs, research, and deliverables for BN live here.
-- No code checkouts, credentials, or client-identifying data in this workspace.
-- Client-sensitive material would need review before sharing outside the team.
-- Nearest, most-specific `AGENTS.md` wins for local decisions, unless it conflicts with this boundary.
+- No code checkouts, credentials, tokens, or client-identifying data in this tree.
+- Never store member-specific harness state here (`settings.local.json`, `*.code-workspace`);
+  keep it in user scope, and launch sessions from a machine-local primary folder.
+- Client-sensitive material needs review before sharing outside the team.
+- Nearest, most-specific `AGENTS.md` wins locally, unless it conflicts with this boundary.
 
 ## Layout
 
-- `product-work/` — shared product work the team relies on. One folder per product area; each declares one Context Fabric profile.
+- `product-work/` — shared work the team relies on. One folder per area; each declares one profile. `area-manifest.yaml` registers areas and exceptions.
 - `prototyping/` — spikes, mockups, experiments. No assigned profile.
-- `agentic-support/` — reusable skills and shared context (Context Fabric).
+- `agentic-support/` — the support engine: skills, Context Fabric, tools, validation.
 
-## Where things live
+## Which source to consult first
 
-- Reusable procedures: `agentic-support/skills/<name>/SKILL.md`. Do not duplicate them in product folders.
-- Shared facts (systems, repos, profiles): resolve the product's `product:<slug>` profile in the Context Fabric.
+| Question | Consult first | If unavailable |
+|---|---|---|
+| Where does this artifact go? | `agentic-support/tools/route-artifact.sh` | the `artifact-routing` skill |
+| What does repo X do? | `agentic-support/context-fabric/records/generated/repo-digests/` | the hydrated checkout |
+| What does a notice currently say? | the template set for that notice ID | ask the BN steward |
+| Does a notice depend on upstream event shape? | `repository:example-gov/eligibility-events` (reference coverage) | ask the Eligibility Platform owner |
+
+Full ladder: `agentic-support/docs/context-source-ladder.md`.
 
 ## Vocabulary
 
-- "notice" = an outbound beneficiary communication (determination, appeal rights, renewal).
-- "template set" = the versioned collection of notice layouts.
-- Notice IDs: BN-001 through BN-140 (stable identifiers).
+"Notice", "template set", and the BN-### ID scheme are defined in `agentic-support/CONCEPTS.md`. Do not guess at them.

@@ -17,7 +17,7 @@ This matches the internal reference implementation's conventions (`context-fabri
 
 ## Why kebab-case
 
-- **No quoting or encoding, ever.** Paths in shell, `bindings.env`, `opencode.json`, and markdown links all work unquoted and unescaped. Nothing to remember, nothing to get wrong.
+- **No quoting or encoding, ever.** Paths in shell, the workspace descriptor, `opencode.json`, and markdown links all work unquoted and unescaped. (Cloud-mount paths *above* your workspace routinely contain spaces, so tools still quote every path — but nothing you name adds to the problem.)
 - **One convention.** Skill bundle directories must be kebab-case (the folder name *is* the skill's invocable name) and Context Fabric slugs are kebab-case. Everything else matching removes the special cases.
 - **Aligns with tool defaults.** Agent tools already expect lowercase directories like `skills/` and `docs/`, so there is no lane-casing conflict whatever docs lanes your team picks.
 - **Portable and git-clean** across case-insensitive (macOS) and case-sensitive (Linux) filesystems.

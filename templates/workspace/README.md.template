@@ -6,18 +6,21 @@ This is a shared agentic product workspace, stood up from Nava's Agentic Workspa
 
 ## Getting started (new teammate)
 
-1. Get the workspace onto your machine (git clone or Drive sync — see the team's chosen method below).
-2. Install dependencies for the current phase (see the kit's `docs/local-setup.md`).
-3. Point your agent tool at this folder (Claude Code reads `CLAUDE.md`; OpenCode/Codex/Cursor read `AGENTS.md`).
-4. If `agentic-support/skills/` exists, run the skill sync script once.
-5. Copy `bindings.env.template` to `bindings.env` and set your local paths.
-6. Ask your agent to read the root `AGENTS.md` and the product area you're working in.
+1. Get the workspace onto your machine (git clone or a synced-folder mount — see the team's chosen method below).
+2. Install dependencies for the current phase (see the kit's `docs/local-setup.md`). `jq` is the only hard requirement; `git` is needed for checkouts.
+3. **Ask your agent to run the `workspace-setup` skill.** It configures your harness for the workspace's multiple roots, writes your machine-local root declaration, and runs the workspace doctor until it is green. Doing this by hand is possible but this is the supported path.
+4. If `agentic-support/skills/` exists, run `agentic-support/skills/sync-skills.sh --target all` once.
+5. Ask your agent to read the root `AGENTS.md` and the product area you're working in.
+
+Check your setup at any time with `agentic-support/tools/workspace-doctor.sh`. It reports which roots this session has, which capability tiers are available, and the one step that unlocks each locked tier.
+
+**Two rules that matter from day one:** launch sessions from a **machine-local** primary folder with this workspace attached as an additional root (otherwise your harness writes personal settings into the shared tree and everyone gets them), and keep code checkouts in your declared machine-local checkouts root, never in here.
 
 ## Layout
 
-- `product-work/` — shared product work the team relies on.
+- `product-work/` — shared product work the team relies on. `area-manifest.yaml` registers areas and their routing exceptions.
 - `prototyping/` — spikes and experiments.
-- `agentic-support/` — shared skills and Context Fabric (Walk phase and up).
+- `agentic-support/` — the support engine: skills, Context Fabric, tools, validation (Walk phase and up).
 - `docs/` — suggested lanes to start from: `ideation/`, `plans/`, `solutions/`. Rename, drop, or add your own.
 
 Directory names follow lowercase kebab-case. See the kit's `docs/directory-and-naming-standard.md`.
@@ -25,7 +28,8 @@ Directory names follow lowercase kebab-case. See the kit's `docs/directory-and-n
 ## Team decisions
 
 - **Phase:** {{Crawl | Walk | Run}}
-- **Sharing:** {{Google Drive | git}}
+- **Sharing:** {{synced storage | git}} — this choice sets the safety model: git gives review and revert; synced storage makes sync itself the distribution channel, so snapshot-first record editing and the no-harness-state rule are load-bearing.
 - **Docs lanes:** {{which lanes this team actually uses}}
 - **Review / ownership:** {{optional — e.g. who reviews before sharing, named owners per area, or "lightweight, no formal gate"}}
-- **Harnesses in use:** {{Claude Code, Codex, OpenCode, ...}}
+- **Harnesses in use:** {{Codex, Claude Code, OpenCode, ...}}
+- **Credentialed systems, if any:** {{name them, and configure `agentic-support/tools/doctor.conf` so the doctor reports whether the credential is loaded}}

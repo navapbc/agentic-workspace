@@ -2,7 +2,7 @@
 purpose: Harness-agnostic and model-agnostic local setup. Dependencies by phase, per-tool configuration, and how a teammate joins an existing workspace.
 audience: PMs setting up their machine to work in a shared agentic workspace.
 status: Active.
-last_updated: 2026-07-22
+last_updated: 2026-07-29
 ---
 
 # Local Setup
@@ -17,7 +17,7 @@ Nothing here is model-specific. The workspace works the same whether the agent b
 
 | Tool | What it's for | Crawl | Walk | Run |
 |---|---|:---:|:---:|:---:|
-| An agent tool (Claude Code / Codex / OpenCode / Cursor) | Doing the work | required | required | required |
+| An agent tool (Codex / Claude Code / OpenCode / Cursor) | Doing the work | required | required | required |
 | A text editor | Editing markdown | required | required | required |
 | `git` | Versioned sharing (optional at Crawl) | optional | optional | recommended |
 | `jq` | Validate/inspect Context Fabric JSON | – | recommended | required |
@@ -44,10 +44,13 @@ The workspace is authored once and read by whatever tool each teammate uses. The
 
 If you do not use a terminal, prefer a graphical or web agent over a command-line one. None of these need a command line:
 
-- **Claude Desktop, the claude.ai web app, or Cursor** — graphical apps. Good default for non-technical teammates.
-- **Claude Code** — powerful but runs in a terminal. Best for people already comfortable there.
+- **Codex in ChatGPT, Claude Desktop, the claude.ai web app, or Cursor** — graphical or web apps. Good default for non-technical teammates.
+- **Codex CLI or Claude Code** — powerful but run in a terminal. Best for people already comfortable there.
 
-A web-only agent (for example claude.ai with the Google Drive connector) can work without installing anything locally. It cannot run the kit's scripts or validator, which is fine at Crawl. For that path, share the workspace over Google Drive (see [collaboration-and-governance.md](collaboration-and-governance.md)). The per-tool setup below applies whichever you pick.
+A web-only agent (for example Codex in ChatGPT, or claude.ai with the Google Drive connector) can work without installing anything locally. It cannot run the kit's scripts or validator, which is fine at Crawl. For that path, share the workspace over Google Drive (see [collaboration-and-governance.md](collaboration-and-governance.md)). The per-tool setup below applies whichever you pick.
+
+### Codex (ChatGPT)
+Codex is OpenAI's coding agent, now offered through ChatGPT. It reads `AGENTS.md` directly and can consume the shared `SKILL.md` bundle without a separate adapter. Point it at the workspace root. See `templates/harness-config/` for notes.
 
 ### Claude Code
 Reads `CLAUDE.md`, **not** `AGENTS.md`. In each folder that has an `AGENTS.md`, add a `CLAUDE.md` containing the single line `@AGENTS.md` — Claude Code expands that import at session start, so you maintain only `AGENTS.md`. `new-workspace.sh` creates the root `CLAUDE.md` import for you, and skills sync into Claude Code's skills directory. No project config file is required to pick up `CLAUDE.md`. (A symlink `CLAUDE.md -> AGENTS.md` works too, but the import is safer over Google Drive and on Windows.)
@@ -63,9 +66,6 @@ Reads `AGENTS.md` and loads workspace skills via `opencode.json`. Drop this at t
 }
 ```
 
-### Codex
-Reads `AGENTS.md` directly and can consume the shared `SKILL.md` bundle without a separate adapter. Point it at the workspace root. See `templates/harness-config/` for notes.
-
 ### Cursor and others
 Any tool that supports an agent-instructions file can point at `AGENTS.md`. If it uses a different filename, add a thin file that says "read `AGENTS.md`" rather than duplicating content.
 
@@ -75,7 +75,7 @@ The rule across all tools: **`AGENTS.md` is the source of truth; per-tool files 
 
 ## Skill sync (Walk and up)
 
-Skills are authored once under `skills/<name>/SKILL.md` (in the support layer) and mirrored into each tool's runtime directory. `sync-skills.sh` ships inside `templates/skills/` and is copied into your workspace's `agentic-support/skills/`. Each teammate runs it from there:
+Skills are authored once under `skills/<id>/SKILL.md` (in the support layer) and mirrored into each tool's runtime directory. `sync-skills.sh` is installed with the support engine. Each teammate runs it from their own machine:
 
 ```bash
 ./agentic-support/skills/sync-skills.sh --target all   # mirror source-of-truth skills into each tool
@@ -90,35 +90,47 @@ codex    -> ~/.agents/skills
 claude   -> ~/.claude/skills
 ```
 
-Adjust to your machine. The source-of-truth `skills/<name>/` is the only thing you edit; the mirrors are generated.
+Adjust to your machine. The source-of-truth `skills/<id>/` is the only thing you edit; the mirrors are generated.
 
 ---
 
-## Portable paths: the bindings pattern
+## Multi-root setup: declaring where your roots are
 
-Skills and workflows reference paths through **named bindings** instead of hardcoded absolute paths, so the same skill works on any teammate's machine. Copy `templates/workspace/bindings.env.template` to `bindings.env` and set the values for your machine:
+Your workspace is several physical directories, not one folder: the shared workspace, a machine-local checkouts root, and one or more working-materials roots. Two things follow.
 
+**1. Tell your harness about the extra roots — in user scope.** Each harness has its own mechanism (an additional-directories setting, a writable-roots list, a multi-root workspace file). The per-harness details live in the engine's `skills/workspace-setup/SKILL.md`, which stays current as harnesses change.
+
+**Put every persistent setting in user scope on your machine, and launch with a machine-local primary folder.** Harnesses write session state under the session's primary folder; if that folder is on shared synced storage, your personal permission grants sync to the whole team — and deleting the file does not help, because the next session recreates it.
+
+**2. Declare your roots once.** Machine-local paths live in a single declaration in your home directory, never in the shared tree:
+
+```bash
+agentic-support/tools/generate-workspace-descriptor.sh \
+  --checkout-root "$HOME/projects/repo-checkouts" \
+  --working-materials-root "<the lane you work in>"
 ```
-WORKSPACE_ROOT=/Users/you/your-workspace
-SUPPORT_ROOT=${WORKSPACE_ROOT}/agentic-support
-PRODUCT_WORK_ROOT=${WORKSPACE_ROOT}/product-work
-PROTOTYPE_ROOT=${WORKSPACE_ROOT}/prototyping
+
+That writes `~/.agentic-workspace/workspace-descriptor.yaml`. Shared documents then reference `${AGENTIC_REPO_CHECKOUT_ROOT}/<repo>/` instead of your absolute path, and every tool resolves it on the reader's machine. Roots are **declared, not guessed**: the generator refuses roots that do not exist, roots that nest, and a re-run that would silently drop a previously declared root.
+
+Check it any time:
+
+```bash
+agentic-support/tools/workspace-doctor.sh
 ```
 
-A skill then says `${SUPPORT_ROOT}/skills/...` rather than `/Users/you/...`. Kebab-case directory names contain no spaces, so nothing needs quoting. This keeps onboarding and sync workflows portable. Never commit a `bindings.env` with a real path into a shared repo; commit only the `.template`.
+The doctor tells you where you are, which roots this session has, which capability tiers are available, and the one step that unlocks each locked tier. **Easier path:** ask your agent to run the `workspace-setup` skill and it does all of the above conversationally, including the harness configuration.
 
 ---
 
 ## Joining a workspace someone else created
 
-1. Get the workspace onto your machine (clone the git repo, or sync the Drive folder). See [collaboration-and-governance.md](collaboration-and-governance.md) for which one your team uses.
+1. Get the workspace onto your machine (clone the git repo, or sync the shared folder). See [collaboration-and-governance.md](collaboration-and-governance.md) for which one your team uses.
 2. Install your phase's dependencies (table above).
-3. Point your tool at it (harness config above).
-4. If the workspace uses skills, run the sync script once.
-5. Copy `bindings.env.template` to `bindings.env` and set your local paths.
-6. Open the workspace in your tool and ask the agent to read the root `AGENTS.md` and the product area you're working in. You now share the team's context.
+3. Ask your agent to run the `workspace-setup` skill. It configures your harness for the multiple roots, writes your machine-local declaration, and runs the doctor until it is green.
+4. If the workspace uses skills, run `agentic-support/skills/sync-skills.sh --target all` once.
+5. Ask the agent to read the root `AGENTS.md` and the product area you're working in. You now share the team's context.
 
-If the workspace has a `pm-onboarding`-style onboarding skill, invoke it and let it walk you through the rest.
+No manual path editing, and nothing you configure ends up in the shared tree.
 
 ---
 

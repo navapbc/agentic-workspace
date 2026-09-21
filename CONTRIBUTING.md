@@ -36,7 +36,7 @@ Do not edit it. Run `scripts/propose.sh` to file a correction proposal under `pr
 ## Before you push
 
 - `tests/run.sh` passes. Exit 3 means a stage was skipped for a missing optional tool -- read which one before treating the run as green.
-- `shellcheck --severity=warning` is clean over every shell script you touched.
+- `shellcheck -x --severity=warning` is clean over every shell script you touched (`-x` so it follows `tests/lib.sh`).
 - No generated file is stale: `scripts/generate.sh --check` and `scripts/render-templates.sh --check` both pass.
 
 ## Code of conduct

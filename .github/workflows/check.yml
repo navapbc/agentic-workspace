@@ -1,0 +1,48 @@
+# Probe form (U1). Its only job is to answer, at the first push, whether Actions
+# run on this repository at all and which of the pinned tools the runner already
+# has. U11 replaces this with the full job (tests/run.sh, shellcheck, the
+# generation freshness check, and openspec validate).
+#
+# CI is advisory here: tests/run.sh is the gate. A skipped stage (exit 3) is a
+# warning annotation on a green step, never a silent pass and never a failure.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Baseline probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The baseline test walks the kit history and the v0.1.0 / v0.2.0 tags.
+          fetch-depth: 0
+
+      - name: Runner tool inventory
+        run: |
+          for t in yq jq node shellcheck; do
+            if command -v "$t" >/dev/null 2>&1; then
+              printf '%-12s %s\n' "$t" "$("$t" --version 2>&1 | head -1)"
+            else
+              printf '%-12s absent\n' "$t"
+            fi
+          done
+
+      - name: Repository baseline
+        run: |
+          set +e
+          bash tests/repo-baseline.test.sh
+          rc=$?
+          set -e
+          case "$rc" in
+            0) echo "baseline: pass" ;;
+            3) echo "::warning title=Stage skipped::tests/repo-baseline.test.sh exited 3 - a stage was skipped because an optional tool is absent. Read the run log before treating this as green." ;;
+            *) echo "::error title=Baseline failed::tests/repo-baseline.test.sh exited $rc"; exit "$rc" ;;
+          esac

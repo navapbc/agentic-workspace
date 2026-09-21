@@ -1,0 +1,33 @@
+# Individual documents bind a person's machine and are the only tier that may
+# carry secret references. They are never shared through this repository.
+documents/**/individual/*.yaml
+individual.yaml
+
+# The maintainer's exact real-name screening list (tests/lib/real-name-patterns.txt
+# holds the committed generic patterns).
+tests/local/
+
+# Secrets and per-machine state, never committed.
+.env
+.env.*
+*.local
+
+# OS / editor metadata
+.DS_Store
+Icon?
+*.swp
+.idea/
+.vscode/
+
+# Dependencies / build output
+node_modules/
+
+# --- Negations, last so they win ---
+
+# The one shipped Individual document is fictional and is committed on purpose.
+!documents/examples/individual/example-practitioner.yaml
+
+# Nothing under tests/fixtures/ is ever ignored: a fixture named for a finding
+# code must reach the validator exactly as written.
+!tests/fixtures/
+!tests/fixtures/**

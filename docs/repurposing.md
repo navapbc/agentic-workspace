@@ -8,7 +8,7 @@
 - Fill in the Proof cell's result and the date as you go. A row is not closed until its proof is recorded here.
 - **Rows 0-4 close before U2 opens.** OpenSpec is the first thing that writes framework-shaped content, and it should not do that while the remote is public or while there is no remote at all.
 - Row 5 follows U7. Row 6 follows U13.
-- Nothing in this repository automates these. `tests/repo-baseline.test.sh` asserts that no committed script calls `gh repo edit`, `git push`, `gh repo delete`, or `gh release delete`.
+- Nothing in this repository automates these. `tests/repo-baseline.test.sh` asserts that no committed shell script -- found by extension or by shebang, not just by a `.sh` suffix -- pushes, creates or deletes a release, or creates, edits, renames, archives, transfers, or deletes a repository, including through `gh api` with a mutating method.
 
 ## Status
 

@@ -3,8 +3,13 @@
 # has. U11 replaces this with the full job (tests/run.sh, shellcheck, the
 # generation freshness check, and openspec validate).
 #
-# CI is advisory here: tests/run.sh is the gate. A skipped stage (exit 3) is a
-# warning annotation on a green step, never a silent pass and never a failure.
+# CI is advisory here: tests/run.sh is the gate. A skipped stage (exit 3) becomes
+# a warning annotation and the step still concludes green -- that is the plan's
+# decision, not an oversight, because the exact real-name list is git-ignored and
+# can never exist in a CI checkout. The consequence to know: a GitHub annotation
+# is not a status, so branch protection cannot see a skipped stage. Read the log,
+# and treat the maintainer's pre-push run (which does have the local list) as the
+# real screening gate.
 name: check
 
 on:

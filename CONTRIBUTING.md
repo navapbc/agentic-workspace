@@ -10,7 +10,7 @@ Changes to this framework are **spec-driven**. The specification changes first, 
 4. **Verify.** `tests/run.sh` is the gate. `openspec validate --all --strict` must be clean.
 5. **Archive.** `openspec archive` merges the deltas into `openspec/specs/` and closes the change.
 
-`openspec validate --all --strict` runs in CI, but `tests/run.sh` is the authority: CI is advisory here.
+`tests/run.sh` is the authority. CI is advisory, and until U11 it runs only the repository baseline probe -- it does not yet run `openspec validate --all --strict` or the full suite, so a green check is not a substitute for running the gate locally.
 
 ## When a spec is not required
 

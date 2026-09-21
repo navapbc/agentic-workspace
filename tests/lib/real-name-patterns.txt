@@ -1,0 +1,21 @@
+# Generic real-identity and credential patterns, committed so the screening stage
+# actually runs in CI. One POSIX extended regular expression per line, matched
+# case-insensitively against every file under docs/plans/ and docs/research/.
+# Blank lines and lines starting with # are ignored.
+#
+# The exact per-maintainer list of real names lives in tests/local/real-names.txt,
+# which is git-ignored and matched as fixed strings. U6 extends both.
+
+# An address at the maintaining organization's domain.
+@navapbc\.com
+
+# A Drive path that still carries the account it was mounted under.
+GoogleDrive-[A-Za-z0-9._%+-]+@
+
+# Credential shapes with enough entropy that a specification would never write
+# one out in full. A header a spec DOES quote verbatim -- the private-key banner,
+# for one -- belongs in the document denylist (schemas/shared, U3), not here:
+# these documents legitimately specify the shapes the validator must detect.
+gh[pousr]_[A-Za-z0-9]{16,}
+AKIA[0-9A-Z]{16}
+xox[baprs]-[A-Za-z0-9-]{10,}

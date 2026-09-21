@@ -42,7 +42,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# Anchor the root to this script, not the caller's cwd: otherwise the runner can
+# discover one checkout's tests and snapshot, verify, and assert another's tree.
+CE_REPO_ROOT="${CE_REPO_ROOT:-$(cd "$HERE/.." && pwd)}"
+export CE_REPO_ROOT
 ROOT="$(repo_root)"
+[ "$ROOT/tests" -ef "$HERE" ] || \
+  usage_error "tests/run.sh lives in $HERE but the framework root resolved to $ROOT; refusing to test a different checkout"
 cd "$ROOT"
 
 discover() {
@@ -75,21 +81,21 @@ fi
 
 snapshot_tree "$ROOT"
 
-worst=0
+worst="$EXIT_PASS"
 failed=()
 skipped=()
 for t in "${TESTS[@]}"; do
   name="$(basename "$t" .test.sh)"
   printf '\n=== %s ===\n' "$name"
-  rc=0
+  rc="$EXIT_PASS"
   bash "$t" || rc=$?
   case "$rc" in
-    0) printf -- '--- %s: pass\n' "$name" ;;
-    3) printf -- '--- %s: skipped a stage\n' "$name"; skipped+=("$name")
-       if [ "$worst" -eq 0 ]; then worst=3; fi ;;
-    2) printf -- '--- %s: usage/environment error\n' "$name"; failed+=("$name")
-       if [ "$worst" -ne 1 ]; then worst=2; fi ;;
-    *) printf -- '--- %s: FAILED (exit %s)\n' "$name" "$rc"; failed+=("$name"); worst=1 ;;
+    "$EXIT_PASS") printf -- '--- %s: pass\n' "$name" ;;
+    "$EXIT_SKIPPED") printf -- '--- %s: skipped a stage\n' "$name"; skipped+=("$name")
+       if [ "$worst" -eq "$EXIT_PASS" ]; then worst="$EXIT_SKIPPED"; fi ;;
+    "$EXIT_USAGE") printf -- '--- %s: usage/environment error\n' "$name"; failed+=("$name")
+       if [ "$worst" -ne "$EXIT_FAIL" ]; then worst="$EXIT_USAGE"; fi ;;
+    *) printf -- '--- %s: FAILED (exit %s)\n' "$name" "$rc"; failed+=("$name"); worst="$EXIT_FAIL" ;;
   esac
 done
 
@@ -100,9 +106,9 @@ printf 'ran %s test script(s)\n' "${#TESTS[@]}"
 if [ "${#failed[@]}" -gt 0 ]; then printf 'failed: %s\n' "${failed[*]}"; fi
 if [ "${#skipped[@]}" -gt 0 ]; then printf 'skipped a stage: %s\n' "${skipped[*]}"; fi
 case "$worst" in
-  0) printf 'result: pass\n' ;;
-  3) printf 'result: pass, with a skipped stage (exit 3, not 0)\n' ;;
-  2) printf 'result: usage or environment error (exit 2)\n' ;;
+  "$EXIT_PASS") printf 'result: pass\n' ;;
+  "$EXIT_SKIPPED") printf 'result: pass, with a skipped stage (exit 3, not 0)\n' ;;
+  "$EXIT_USAGE") printf 'result: usage or environment error (exit 2)\n' ;;
   *) printf 'result: FAILED (exit 1)\n' ;;
 esac
 exit "$worst"

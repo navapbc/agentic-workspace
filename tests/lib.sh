@@ -38,10 +38,32 @@ fail() {
   exit "$EXIT_FAIL"
 }
 
-# skip <message...> -- report a skipped stage on stderr and exit 3.
+# skip <message...> -- report a skipped stage on stderr and exit 3 immediately.
+# Use this when the whole test script cannot run.
 skip() {
   printf 'SKIP: %s\n' "$*" >&2
   exit "$EXIT_SKIPPED"
+}
+
+_CE_SKIPPED=0
+
+# note_skip <message...> -- record that ONE stage was skipped and keep going.
+# The script must end with `finish`, which then exits 3. Without this ledger a
+# script that skips a stage and runs to the end would exit 0 and report a pass
+# for a check that never ran.
+note_skip() {
+  printf 'SKIP: %s\n' "$*" >&2
+  _CE_SKIPPED=$((_CE_SKIPPED + 1))
+}
+
+# finish -- the last line of every test script. Exits 3 when any stage was
+# skipped, 0 otherwise.
+finish() {
+  if [ "$_CE_SKIPPED" -gt 0 ]; then
+    printf '%s stage(s) skipped; reporting exit %s, not 0\n' "$_CE_SKIPPED" "$EXIT_SKIPPED" >&2
+    exit "$EXIT_SKIPPED"
+  fi
+  exit "$EXIT_PASS"
 }
 
 # usage_error <message...> -- report a usage or environment problem and exit 2.
@@ -78,15 +100,19 @@ tmp_repo_copy() {
 
 # repo_root -- absolute path of the framework root (the directory holding framework.json).
 repo_root() {
-  local dir="${CE_REPO_ROOT:-$PWD}"
-  while [ "$dir" != "/" ]; do
+  local start="${CE_REPO_ROOT:-$PWD}" dir prev=""
+  # dirname of a relative path bottoms out at "." and stays there, so the ascent
+  # must absolutize first and stop at a fixed point, never at the literal "/".
+  dir="$(cd "$start" 2>/dev/null && pwd)" || usage_error "not a directory: $start"
+  while [ "$dir" != "$prev" ]; do
     if [ -f "$dir/framework.json" ]; then
       printf '%s\n' "$dir"
       return 0
     fi
+    prev="$dir"
     dir="$(dirname "$dir")"
   done
-  usage_error "framework.json not found above ${CE_REPO_ROOT:-$PWD}; run from inside the framework repository"
+  usage_error "framework.json not found above $start; run from inside the framework repository"
 }
 
 # strip_from_path <tool> -- print a PATH with every directory that provides <tool>
@@ -113,17 +139,22 @@ make_git_dir() {
   git -C "$dir" config commit.gpgsign false
 }
 
+# _ce_sha256_stream -- hex digest of stdin. coreutils on Linux, shasum on macOS.
+_ce_sha256_stream() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | cut -d' ' -f1
+  else
+    usage_error "no sha256 tool available (need sha256sum or shasum)"
+  fi
+}
+
 # sha256_of <file> -- print the file's sha256 hex digest, nothing else.
 sha256_of() {
   local file="${1:?sha256_of needs a file}"
   [ -f "$file" ] || usage_error "sha256_of: no such file: $file"
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$file" | cut -d' ' -f1
-  elif command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$file" | cut -d' ' -f1
-  else
-    usage_error "sha256_of: neither sha256sum nor shasum is available"
-  fi
+  _ce_sha256_stream < "$file"
 }
 
 # isolated_home -- point HOME and XDG_CONFIG_HOME at a fresh temp directory and
@@ -141,14 +172,28 @@ isolated_home() {
 }
 
 _ce_tree_digest() {
-  local dir="$1"
+  local dir="$1" f
   {
     git -C "$dir" rev-parse HEAD 2>/dev/null || printf 'no-head\n'
     git -C "$dir" status --porcelain=v1 --untracked-files=all
-    git -C "$dir" diff --cached --name-status
-  } | {
-    if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi
-  } | cut -d' ' -f1
+    # Content, not just status letters: rewriting a file that was ALREADY dirty
+    # at snapshot time leaves its status letter unchanged.
+    git -C "$dir" diff HEAD --binary 2>/dev/null || git -C "$dir" diff --binary || true
+    git -C "$dir" diff --cached --binary
+    # Untracked files are named by status but their bytes are not.
+    git -C "$dir" ls-files --others --exclude-standard -z \
+      | while IFS= read -r -d '' f; do
+          [ -f "$dir/$f" ] && printf '%s %s\n' "$f" "$(sha256_of "$dir/$f")"
+        done || true
+    # Two ignored trees the framework must never disturb: the maintainer's
+    # real-name screening list and their Individual documents. Ignored paths are
+    # invisible to --untracked-files=all.
+    { find "$dir/tests/local" "$dir/documents" -type f 2>/dev/null || true; } \
+      | LC_ALL=C sort \
+      | while IFS= read -r f; do
+          [ -f "$f" ] && printf '%s %s\n' "${f#"$dir"/}" "$(sha256_of "$f")"
+        done
+  } | _ce_sha256_stream
 }
 
 _ce_ensure_snapshot_dir() {

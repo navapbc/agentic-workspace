@@ -16,9 +16,9 @@ EMPTY_TREE="$(git hash-object -t tree /dev/null)"
 # --- history -----------------------------------------------------------------
 
 empty_tree_commits=()
-while IFS= read -r c; do
-  [ "$(git rev-parse "$c^{tree}")" = "$EMPTY_TREE" ] && empty_tree_commits+=("$c")
-done < <(git rev-list HEAD)
+while read -r commit tree; do
+  [ "$tree" = "$EMPTY_TREE" ] && empty_tree_commits+=("$commit")
+done < <(git log --format='%H %T' HEAD)
 
 [ "${#empty_tree_commits[@]}" -eq 1 ] || \
   fail "expected exactly one commit with an empty tree, found ${#empty_tree_commits[@]}"
@@ -135,17 +135,43 @@ done < <(sed -n '/^## The rows/,$p' docs/repurposing.md)
 pass "docs/repurposing.md: 7 rows, every gate/action/proof/rollback cell non-empty"
 
 # --- no script performs a human-only action -----------------------------------
-# The patterns are assembled from fragments so this test file does not match itself.
-forbidden=("gh repo ed""it" "git ""push" "gh repo del""ete" "gh release del""ete" \
-           "gh repo ren""ame" "git ""push --force")
-while IFS= read -r script; do
+# Whitespace-tolerant EREs, so `git -C "$d" push` and a backslash continuation do
+# not slip past a fixed-string match. The patterns are regexes, so this file's own
+# text cannot match them.
+forbidden=(
+  '(^|[^A-Za-z0-9_-])git[[:space:]]+([^;&|#]*[[:space:]]+)?push([[:space:]]|$)'
+  'gh[[:space:]]+repo[[:space:]]+(edit|delete|rename|create|archive|transfer)'
+  'gh[[:space:]]+release[[:space:]]+(create|delete|edit|upload)'
+  'gh[[:space:]]+api[^|;&]*(-X|--method)[[:space:]]*(POST|PUT|PATCH|DELETE)'
+)
+# Every tracked or untracked-but-not-ignored file that is actually a shell script:
+# by extension, or by shebang, so an extensionless `publish` is not invisible.
+scripts=()
+while IFS= read -r f; do
+  [ -f "$f" ] || continue
+  case "$f" in
+    *.sh|*.bash|*.zsh) scripts+=("$f"); continue ;;
+  esac
+  IFS= read -r shebang < "$f" || true
+  case "$shebang" in
+    '#!'*sh|'#!'*sh' '*) scripts+=("$f") ;;
+  esac
+done < <(git ls-files -co --exclude-standard | sort)
+[ "${#scripts[@]}" -gt 0 ] || fail "the human-only-action scan found no shell scripts to check"
+# Join backslash continuations first: grep is line-based, so `git \` on one line
+# and `push --force` on the next would otherwise slip every pattern.
+join_continuations() {
+  awk '{ while (/\\$/ && (getline nxt) > 0) { sub(/\\$/, ""); $0 = $0 nxt } print }' "$1"
+}
+for script in "${scripts[@]}"; do
+  joined="$(join_continuations "$script")"
   for pat in "${forbidden[@]}"; do
-    if grep -qF -- "$pat" "$script"; then
-      fail "$script runs a human-only action: $pat (see docs/repurposing.md)"
+    if printf '%s\n' "$joined" | grep -aqE -- "$pat"; then
+      fail "$script runs a human-only action matching /$pat/ (see docs/repurposing.md)"
     fi
   done
-done < <(find . -name '*.sh' -not -path './.git/*' | sort)
-pass "no committed shell script pushes, renames, deletes, or changes repository visibility"
+done
+pass "none of the ${#scripts[@]} committed shell scripts push, release, rename, delete, or change repository visibility"
 
 # --- .gitignore ---------------------------------------------------------------
 
@@ -174,18 +200,27 @@ for fn in fail tmp_repo_copy strip_from_path make_git_dir sha256_of isolated_hom
 done
 pass "tests/lib.sh defines all seven required functions"
 
-copy_path="$(bash -c '. "'"$ROOT"'/tests/lib.sh"; tmp_repo_copy')"
+# One copy of the whole tree, history included: the subshell checks what must be
+# true while the copy exists, then its EXIT trap gives us the cleanup check.
+copy_report="$(bash -c '. "'"$ROOT"'/tests/lib.sh"
+c="$(tmp_repo_copy)"
+[ -d "$c/.git" ] || { printf "no-git\t%s\n" "$c"; exit 0; }
+[ -f "$c/framework.json" ] || { printf "no-marker\t%s\n" "$c"; exit 0; }
+printf "preserved\t%s\n" "$c"')"
+copy_state="${copy_report%%	*}"
+copy_path="${copy_report#*	}"
+case "$copy_state" in
+  preserved) : ;;
+  no-git) fail "tmp_repo_copy did not preserve .git in the copy" ;;
+  no-marker) fail "tmp_repo_copy did not copy framework.json into the copy" ;;
+  *) fail "tmp_repo_copy reported an unexpected state: $copy_report" ;;
+esac
 case "$copy_path" in
   *' '*) : ;;
   *) fail "tmp_repo_copy returned a path with no space in it: $copy_path" ;;
 esac
 [ -e "$copy_path" ] && fail "tmp_repo_copy did not clean up on exit: $copy_path"
-pass "tmp_repo_copy returns a spaced path and removes it on exit"
-
-copy_check="$(bash -c '. "'"$ROOT"'/tests/lib.sh"; c="$(tmp_repo_copy)"; \
-  [ -d "$c/.git" ] && [ -f "$c/framework.json" ] && echo preserved')"
-[ "$copy_check" = "preserved" ] || fail "tmp_repo_copy did not preserve .git in the copy"
-pass "tmp_repo_copy preserves .git and the framework root marker"
+pass "tmp_repo_copy: spaced path, .git and framework.json preserved, removed on exit"
 
 # --- docs/plans and docs/research are scrubbed --------------------------------
 # A placeholder is an <angle-bracket> token, an ellipsis, or one of a tiny
@@ -196,16 +231,57 @@ pass "tmp_repo_copy preserves .git and the framework root marker"
 # a POSIX bracket expression, which is why this is built as a variable.
 TOKEN_STOP='] `"'"'"')|,'
 
+# Scan an explicit file list, never two directory names: a renamed or emptied
+# tree would otherwise make every grep match nothing and the scan report "clean".
+scrubbed=()
+missing=()
+while IFS= read -r f; do
+  if [ -f "$f" ]; then scrubbed+=("$f"); else missing+=("$f"); fi
+done < <(git ls-files -co --exclude-standard -- docs/plans docs/research | sort)
+[ "${#missing[@]}" -eq 0 ] || \
+  fail "${#missing[@]} tracked file(s) under docs/plans or docs/research are missing from disk (${missing[0]} ...); a moved or deleted tree must not read as clean"
+[ "${#scrubbed[@]}" -gt 0 ] || \
+  fail "the scrub scan found no files under docs/plans or docs/research; it cannot report them clean"
+for d in docs/plans docs/research; do
+  [ -d "$d" ] || fail "$d does not exist; the scrub scan cannot report it clean"
+done
+
 leaks=0
 report_leak() { printf 'LEAK %s\n' "$*" >&2; leaks=$((leaks + 1)); }
 
-while IFS= read -r seg; do
-  case "$seg" in
-    ''|'...'|'…'|name|x|user|you|'<'*) : ;;
-    *) report_leak "/Users/$seg looks like a real account name" ;;
-  esac
-done < <(grep -rEoh "/Users/[^${TOKEN_STOP}]*" docs/plans docs/research 2>/dev/null \
-         | sed 's#^/Users/##; s#/.*##' | sort -u)
+# Every check below is a byte-level ASCII match, so a file the greps cannot read
+# as text is unscannable, not clean. UTF-16 is the common way this arrives.
+# A NUL cannot survive command substitution, so probe by stripping instead of
+# matching: if removing NULs changes the file, it had some.
+for f in "${scrubbed[@]}"; do
+  if [ "$(LC_ALL=C tr -d '\000' < "$f" | wc -c)" -ne "$(wc -c < "$f")" ]; then
+    report_leak "$f contains NUL bytes and cannot be scanned as text (UTF-16 or binary?)"
+  fi
+done
+
+# Machine-path roots. The same four the AGENTS.md check above uses, plus the
+# home-relative forms. A documented pattern literal has no segment after the
+# root or carries a placeholder token; a real path names an account.
+for root in '/Users/' '/home/' '/Volumes/' 'file:///Users/'; do
+  while IFS= read -r seg; do
+    case "$seg" in
+      ''|'...'|'…'|name|x|user|you|'<'*) : ;;
+      *) report_leak "$root$seg looks like a real account or volume name" ;;
+    esac
+  done < <(grep -aroEh "${root}[^${TOKEN_STOP}]*" "${scrubbed[@]}" 2>/dev/null \
+           | sed "s#^${root}##; s#/.*##" | sort -u)
+done
+
+# A root with nothing after it on the line is how a wrapped real path looks:
+# grep is line-based, so the account name on the continuation line is unseen.
+if grep -aEq '(/Users/|/home/|/Volumes/|op://)[[:space:]]*$' "${scrubbed[@]}" 2>/dev/null; then
+  report_leak "a line ends in a bare path root or op:// prefix; a wrapped real path reads as a placeholder"
+fi
+
+# A home-relative path (~/... or $HOME/...) cannot carry an account name -- that
+# is what the tilde replaces -- so there is no segment worth screening. The real
+# risk in that shape is a Drive path carrying an account email, which the
+# GoogleDrive- and email checks below already cover.
 
 while IFS= read -r seg; do
   case "$seg" in
@@ -213,37 +289,59 @@ while IFS= read -r seg; do
     Example-Vault) : ;;
     *) report_leak "op://$seg/ names a real vault" ;;
   esac
-done < <(grep -rEoh "op://[^${TOKEN_STOP}]*" docs/plans docs/research 2>/dev/null \
+done < <(grep -aroEh "op://[^${TOKEN_STOP}]*" "${scrubbed[@]}" 2>/dev/null \
          | sed 's#^op://##; s#/.*##' | sort -u)
 
-if grep -rEq 'GoogleDrive-[^ ]*@' docs/plans docs/research 2>/dev/null; then
+if grep -aEq 'GoogleDrive-[^ ]*@' "${scrubbed[@]}" 2>/dev/null; then
   report_leak "a CloudStorage path carries an account email"
 fi
-if grep -rEq '\.codex/attachments/[0-9a-f]{8}-' docs/plans docs/research 2>/dev/null; then
+if grep -aEq '\.codex/attachments/[0-9a-f]{8}-' "${scrubbed[@]}" 2>/dev/null; then
   report_leak "a harness attachment path carries a real attachment id"
 fi
-if grep -rqF '/tmp/compound-engineering' docs/plans docs/research 2>/dev/null; then
+if grep -aqF '/tmp/compound-engineering' "${scrubbed[@]}" 2>/dev/null; then
   report_leak "a scratch path under /tmp survived the scrub"
 fi
-if grep -rEq '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' docs/plans docs/research 2>/dev/null; then
+if grep -aEq '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' "${scrubbed[@]}" 2>/dev/null; then
   report_leak "an email address survived the scrub"
 fi
 
+# The exact personal-identifier list. tests/local/ is git-ignored, so this input
+# is never present in CI; its absence is a SKIPPED STAGE (exit 3), never a pass.
+# Two lists. tests/lib/real-name-patterns.txt is committed and holds generic
+# EREs, so this stage runs in CI. tests/local/real-names.txt is git-ignored and
+# holds the maintainer's exact names, matched as fixed strings; its absence is a
+# SKIPPED STAGE (exit 3), never a pass.
+GENERIC_NAMES="tests/lib/real-name-patterns.txt"
 REAL_NAMES="tests/local/real-names.txt"
+
+if [ -f "$GENERIC_NAMES" ]; then
+  while IFS= read -r pat; do
+    [ -n "$pat" ] || continue
+    case "$pat" in \#*) continue ;; esac
+    if grep -aqiE -- "$pat" "${scrubbed[@]}" 2>/dev/null; then
+      report_leak "/$pat/ from $GENERIC_NAMES matches under docs/plans or docs/research"
+    fi
+  done < "$GENERIC_NAMES"
+  pass "checked ${#scrubbed[@]} scrubbed file(s) against the generic patterns"
+else
+  fail "$GENERIC_NAMES is missing; it is committed and the screening stage needs it"
+fi
+
 if [ -f "$REAL_NAMES" ]; then
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     case "$name" in \#*) continue ;; esac
-    if grep -rqiF -- "$name" docs/plans docs/research 2>/dev/null; then
+    if grep -aqiF -- "$name" "${scrubbed[@]}" 2>/dev/null; then
       report_leak "a name from $REAL_NAMES appears under docs/plans or docs/research"
     fi
   done < "$REAL_NAMES"
-  pass "checked docs/plans and docs/research against $REAL_NAMES"
+  pass "checked ${#scrubbed[@]} scrubbed file(s) against the maintainer's exact list"
 else
-  printf 'note: %s is absent (U6 adds it); the exact real-name check did not run\n' "$REAL_NAMES"
+  note_skip "exact real-name screening: $REAL_NAMES is absent (git-ignored; U6 documents how to create it)"
 fi
 
 [ "$leaks" -eq 0 ] || fail "$leaks leak(s) under docs/plans or docs/research"
-pass "docs/plans and docs/research carry no machine path, secret reference, or personal identifier"
+pass "${#scrubbed[@]} scrubbed file(s) carry no machine path, secret reference, or personal identifier"
 
-printf '\nrepo-baseline: all checks passed\n'
+printf '\nrepo-baseline: checks complete\n'
+finish

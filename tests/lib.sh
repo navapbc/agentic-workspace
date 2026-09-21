@@ -19,15 +19,15 @@ EXIT_USAGE=2
 EXIT_SKIPPED=3
 export EXIT_PASS EXIT_FAIL EXIT_USAGE EXIT_SKIPPED
 
-_CE_TMPDIRS=()
-_CE_SNAPSHOT_DIR=""
+# One temp root per sourcing shell, created here rather than on demand: a helper
+# called inside a command substitution runs in a subshell, so anything it assigns
+# to a global is lost and its directory would never be cleaned up.
+_CE_TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/ce-run.XXXXXX")"
 
 _ce_cleanup() {
-  local d
-  for d in "${_CE_TMPDIRS[@]+"${_CE_TMPDIRS[@]}"}"; do
-    [ -n "$d" ] && [ -d "$d" ] && rm -rf "$d"
-  done
-  [ -n "$_CE_SNAPSHOT_DIR" ] && [ -d "$_CE_SNAPSHOT_DIR" ] && rm -rf "$_CE_SNAPSHOT_DIR"
+  if [ -n "${_CE_TMP_ROOT:-}" ] && [ -d "$_CE_TMP_ROOT" ]; then
+    rm -rf "$_CE_TMP_ROOT"
+  fi
   return 0
 }
 trap _ce_cleanup EXIT
@@ -59,9 +59,8 @@ pass() {
 # test that forgets to quote a path fails here instead of on someone's machine.
 _ce_mktemp_spaced() {
   local base
-  base="$(mktemp -d "${TMPDIR:-/tmp}/ce-${1:-tmp}.XXXXXX")" || return 1
+  base="$(mktemp -d "$_CE_TMP_ROOT/${1:-tmp}.XXXXXX")" || return 1
   mkdir -p "$base/with space" || return 1
-  _CE_TMPDIRS+=("$base")
   printf '%s\n' "$base/with space"
 }
 
@@ -152,15 +151,12 @@ _ce_tree_digest() {
   } | cut -d' ' -f1
 }
 
-# The snapshot directory must be created by a call that is NOT inside a command
-# substitution, or the assignment is lost with the subshell.
 _ce_ensure_snapshot_dir() {
-  [ -n "$_CE_SNAPSHOT_DIR" ] && return 0
-  _CE_SNAPSHOT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/ce-snap.XXXXXX")"
+  mkdir -p "$_CE_TMP_ROOT/snapshots"
 }
 
 _ce_snapshot_slot() {
-  printf '%s/%s\n' "$_CE_SNAPSHOT_DIR" "$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')"
+  printf '%s/snapshots/%s\n' "$_CE_TMP_ROOT" "$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')"
 }
 
 # snapshot_tree <dir> -- record <dir>'s HEAD, working tree, and index state.

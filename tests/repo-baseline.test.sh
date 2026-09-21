@@ -77,7 +77,7 @@ pass "CLAUDE.md is a real file importing AGENTS.md"
 
 command -v jq >/dev/null 2>&1 || usage_error "jq is required for the framework.json checks"
 jq -e . framework.json >/dev/null || fail "framework.json is not valid JSON"
-for key in .version .contracts.org .contracts["bounded-context"] .contracts.individual \
+for key in .version .contracts.org '.contracts["bounded-context"]' .contracts.individual \
            .contracts.view .tools.yq .tools.jq .tools.openspec .tools.openwiki \
            .lookup.individual_env; do
   jq -e "$key" framework.json >/dev/null || fail "framework.json is missing $key"
@@ -192,6 +192,10 @@ pass "tmp_repo_copy preserves .git and the framework root marker"
 # documented set. Anything that looks like a real account, vault, or attachment id
 # is a leak. docs/experiments/README.md records the full rule.
 
+# Characters that end a path or a reference in prose. ']' must come first inside
+# a POSIX bracket expression, which is why this is built as a variable.
+TOKEN_STOP='] `"'"'"')|,'
+
 leaks=0
 report_leak() { printf 'LEAK %s\n' "$*" >&2; leaks=$((leaks + 1)); }
 
@@ -200,7 +204,7 @@ while IFS= read -r seg; do
     ''|'...'|'…'|name|x|user|you|'<'*) : ;;
     *) report_leak "/Users/$seg looks like a real account name" ;;
   esac
-done < <(grep -rEoh '/Users/[^ `"'"'"')]|,]*' docs/plans docs/research 2>/dev/null \
+done < <(grep -rEoh "/Users/[^${TOKEN_STOP}]*" docs/plans docs/research 2>/dev/null \
          | sed 's#^/Users/##; s#/.*##' | sort -u)
 
 while IFS= read -r seg; do
@@ -209,7 +213,7 @@ while IFS= read -r seg; do
     Example-Vault) : ;;
     *) report_leak "op://$seg/ names a real vault" ;;
   esac
-done < <(grep -rEoh 'op://[^ `"'"'"')]|,]*' docs/plans docs/research 2>/dev/null \
+done < <(grep -rEoh "op://[^${TOKEN_STOP}]*" docs/plans docs/research 2>/dev/null \
          | sed 's#^op://##; s#/.*##' | sort -u)
 
 if grep -rEq 'GoogleDrive-[^ ]*@' docs/plans docs/research 2>/dev/null; then

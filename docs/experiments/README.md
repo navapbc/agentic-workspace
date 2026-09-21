@@ -34,3 +34,15 @@ What deliberately **stays**, because removing it would break the work these docu
 - `joseoyolas/agentic-workspace-hawks-landing` in `docs/repurposing.md`, which is the fork a human has to act on. A checklist row that cannot name its target is not executable.
 
 U6 adds the generic real-name patterns (`tests/lib/real-name-patterns.txt`) and the git-ignored exact list (`tests/local/real-names.txt`); `tests/repo-baseline.test.sh` already consumes the exact list when it is present.
+
+### U1 -- `shellcheck` runs with `-x`
+
+The Verification Contract names `shellcheck --severity=warning` and `--severity=style`. Every test script sources `tests/lib.sh`, and without `-x` shellcheck reports SC1091 ("not following") for each one at style severity. `-x` is added to the canonical invocation in `CONTRIBUTING.md` and the U11 workflow so the style run is meaningfully clean rather than clean-by-suppression.
+
+### U1 -- two subshell bugs found by the tests, not by review
+
+`tmp_repo_copy` and `assert_tree_unchanged` both registered their temp directories from inside a command substitution, so the global that held them was discarded with the subshell: the snapshot was never found and the copies were never cleaned up. Both now hang off one `_CE_TMP_ROOT` created when the library is sourced. Worth remembering when adding a helper to `tests/lib.sh`: **a helper whose result is captured with `$(...)` cannot mutate a global.**
+
+### U1 -- the baseline test's leak scan is a denylist, not an allowlist
+
+An earlier draft allowlisted the placeholder tokens that may follow `/Users/` or `op://`. That passes a real account name the moment someone adds a new placeholder spelling. The check now rejects any segment that *looks* like a real account or vault -- an ordinary identifier that is not an angle-bracket token, an ellipsis, or one of `name`, `x`, `user`, `you`, `vault`, `Example-Vault` -- and additionally rejects any email address, any `.codex/attachments/<uuid>` path, and any `/tmp/compound-engineering` scratch path. Proven by planting each shape in a throwaway copy and watching the test fail.

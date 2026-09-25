@@ -1,10 +1,15 @@
-Agentic Workspace
+Context Fabric
 Copyright 2026 Nava PBC
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
 It succeeds the Agentic Workspace Starter Kit, whose history stays reachable in
 this repository at tags v0.1.0 and v0.2.0 under the same license.
+
+Context Fabric is also the successor to the DMod Context Fabric component, which
+remains in service while this framework is built. Where both are in play, the
+earlier one is referred to as the DMod Context Fabric component; Context Fabric
+unqualified means this framework.
 
 This repository is public so that a Nava program can read the framework without
 an access request. Every organization, system, person, and secret reference

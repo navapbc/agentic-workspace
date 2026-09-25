@@ -158,7 +158,7 @@ sha256_of() {
 }
 
 # isolated_home -- point HOME and XDG_CONFIG_HOME at a fresh temp directory and
-# unset AGENTIC_WORKSPACE_INDIVIDUAL, so a test never reads or writes the real
+# unset CONTEXT_FABRIC_INDIVIDUAL, so a test never reads or writes the real
 # machine's Individual document. Exports into the calling shell.
 isolated_home() {
   local home
@@ -167,7 +167,7 @@ isolated_home() {
   HOME="$home"
   XDG_CONFIG_HOME="$home/.config"
   export HOME XDG_CONFIG_HOME
-  unset AGENTIC_WORKSPACE_INDIVIDUAL
+  unset CONTEXT_FABRIC_INDIVIDUAL
   printf '%s\n' "$home"
 }
 

@@ -1,4 +1,4 @@
-# Agentic Workspace - Agent Instructions (Claude Code)
+# Context Fabric - Agent Instructions (Claude Code)
 
 <!--
   Claude Code reads CLAUDE.md, not AGENTS.md. This file is a one-line import so

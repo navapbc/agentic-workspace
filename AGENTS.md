@@ -1,4 +1,4 @@
-# Agentic Workspace - Agent Instructions
+# Context Fabric - Agent Instructions
 Read `START-HERE.md` first, then the `views/<document-id>/AGENTS.md` named for your work; nothing else is required reading.
 Governed facts live in `views/` (generated) and are authored in `documents/`; never hand-edit anything under `views/`.
 Templates are in `templates/`, contracts in `schemas/`, scripts in `scripts/`, skills in `.agents/skills/` (mirrored at `.claude/skills/`).

@@ -1,8 +1,10 @@
-# Agentic Workspace
+# Context Fabric
+
+> Connected context that supports work across people, domains, and agents.
 
 > **Skeleton.** U13 writes the full README; U12 decides the product name. This file exists so the repository is navigable from the first commit.
 
-A schema-forward framework for giving an agent the context it needs, in three nested, versioned document tiers:
+A schema-forward framework for giving an agent the context it needs, in three nested, versioned document tiers. It succeeds the DMod Context Fabric component, which stays in service while this is built; where both are in play, the earlier one is the *DMod Context Fabric component*.
 
 | Tier | Answers | Owned by |
 |---|---|---|

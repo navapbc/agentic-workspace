@@ -1,6 +1,6 @@
 {
   "$comment": "Repository-root marker. scripts/lib/root.sh finds the framework root by walking up to this file. Hand-maintained.",
-  "framework": "agentic-workspace",
+  "framework": "context-fabric",
   "version": "0.3.0",
   "contracts": {
     "org": 1,
@@ -9,16 +9,52 @@
     "view": 1
   },
   "tools": {
-    "yq": { "min": "4.44.0", "required": true, "purpose": "YAML reads in the always-on validation stage" },
-    "jq": { "min": "1.7", "required": true, "purpose": "JSON reads, finding emission, view rendering" },
-    "node": { "min": "22.22.0", "required": false, "purpose": "runs openspec and openwiki" },
-    "openspec": { "package": "@fission-ai/openspec", "version": "1.13.1", "min": "1.13.1", "required": false, "purpose": "spec-driven framework changes" },
-    "openwiki": { "package": "openwiki", "version": "0.5.2", "min": "0.5.2", "required": false, "purpose": "generated contributor documentation" },
-    "check-jsonschema": { "runner": "uv", "version": null, "required": false, "purpose": "optional JSON Schema stage; absent means the schema check reports not validated" },
-    "skills-ref": { "package": null, "version": null, "required": false, "purpose": "skill frontmatter and packaging checks", "pinned_by": "U9" }
+    "yq": {
+      "min": "4.44.0",
+      "required": true,
+      "purpose": "YAML reads in the always-on validation stage"
+    },
+    "jq": {
+      "min": "1.7",
+      "required": true,
+      "purpose": "JSON reads, finding emission, view rendering"
+    },
+    "node": {
+      "min": "22.22.0",
+      "required": false,
+      "purpose": "runs openspec and openwiki"
+    },
+    "openspec": {
+      "package": "@fission-ai/openspec",
+      "version": "1.13.1",
+      "min": "1.13.1",
+      "required": false,
+      "purpose": "spec-driven framework changes"
+    },
+    "openwiki": {
+      "package": "openwiki",
+      "version": "0.5.2",
+      "min": "0.5.2",
+      "required": false,
+      "purpose": "generated contributor documentation"
+    },
+    "check-jsonschema": {
+      "runner": "uv",
+      "version": null,
+      "required": false,
+      "purpose": "optional JSON Schema stage; absent means the schema check reports not validated"
+    },
+    "skills-ref": {
+      "package": null,
+      "version": null,
+      "required": false,
+      "purpose": "skill frontmatter and packaging checks",
+      "pinned_by": "U9"
+    }
   },
   "lookup": {
-    "individual_env": "AGENTIC_WORKSPACE_INDIVIDUAL",
-    "individual_default": "~/.config/agentic-workspace/individual.yaml"
+    "individual_env": "CONTEXT_FABRIC_INDIVIDUAL",
+    "individual_default": "~/.config/context-fabric/individual.yaml",
+    "workspace_default": "~/context-fabric/"
   }
 }

@@ -110,6 +110,11 @@ printf '%s\n' "$handwritten" | grep -q 'views/' || \
   fail "AGENTS.md does not point at views/"
 printf '%s\n' "$handwritten" | grep -q 'openwiki/' || \
   fail "AGENTS.md does not say what openwiki/ is"
+# Two audiences open this repository and only one of them is here to read a view.
+# Until the first views exist, an agent building the framework would otherwise be
+# sent to START-HERE.md and a views/ directory that is empty.
+printf '%s\n' "$handwritten" | grep -q 'CONTRIBUTING.md' || \
+  fail "AGENTS.md does not route an agent building the framework to CONTRIBUTING.md; it reads as if every reader is here to consume a view"
 pass "AGENTS.md: $lines hand-written lines, no absolute path, reading order stated"
 
 # --- SECURITY.md --------------------------------------------------------------

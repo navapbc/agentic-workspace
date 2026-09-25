@@ -1,0 +1,34 @@
+# The false-positive guard for the shared-tier denylist, in the tier whose
+# limitations carry the most prose. "task-time" and "risk-adjusted" are the two
+# phrases the plan calls out by name; the rest brush the path and credential
+# patterns without being either.
+id: example-near-miss-context
+kind: bounded-context
+schema_version: 1
+release: 1
+identity:
+  name: Example Near Miss Context
+  purpose: A context whose prose deliberately resembles the shapes the denylist rejects.
+organizations:
+  - example-agency
+extends:
+  - id: example-agency
+    release: 1
+    location: file:documents/org/example-agency.yaml
+systems:
+  - ref: example-agency#claims-warehouse
+    scope: not-established
+outputs:
+  roles:
+    - analyst
+  guidance: The view is the thing to read; this document is where its facts are authored.
+  destination: file:views/example-near-miss-context
+limitations:
+  - "A task-time query returns yesterday's rows, because the export runs overnight."
+  - "The counts are not risk-adjusted, so they will not match the published summaries."
+  - "The home page of the reporting tool is at https://reports.example.invalid/home/index."
+  - "Operators keep their own working copies in a home directory the framework never reads."
+  - "The interface issues a token per session; no token is recorded here, and none should be."
+  - "Password rotation is the help desk's procedure, not this team's."
+  - "A file: location is relative to the document that declares it."
+access_failures: []

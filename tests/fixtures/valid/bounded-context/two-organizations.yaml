@@ -1,0 +1,73 @@
+# A team whose work crosses an organizational boundary. Two extends entries from
+# two different organizations is the ordinary case rather than the exception, so
+# it is a fixture: a contract that only admits one upstream would push the second
+# organization's facts into a copy.
+id: example-crossing-context
+kind: bounded-context
+schema_version: 1
+release: 3
+identity:
+  name: Example Crossing Context
+  purpose: The context a team needs when its workflows span the agency and the platform office.
+  audience: Engineers and analysts who work across both organizations.
+organizations:
+  - example-agency
+  - example-platform
+extends:
+  - id: example-agency
+    release: 1
+    location: file:documents/org/example-agency.yaml
+  - id: example-platform
+    release: 4
+    location: url:https://code.example.invalid/example-platform/documents/org/example-platform.yaml
+source_selection:
+  - id: intake-counts
+    source: The claims warehouse read API
+    status: preferred
+    rationale: It is the only source whose counts the owning team will stand behind.
+  - id: intake-counts-spreadsheet
+    source: A spreadsheet an operator maintains by hand
+    status: rejected
+    rationale: Nobody owns it, and two readers have already found different numbers in it.
+repositories:
+  - id: crossing-workflows
+    location: url:https://code.example.invalid/example-agency/crossing-workflows
+    purpose: The automation this context's workflows run.
+systems:
+  - ref: example-agency#claims-warehouse
+    scope: established
+    anchors:
+      - claims-intake-counts
+  - ref: example-platform#context-server
+    scope: not-established
+    limitations:
+      - "Nobody on this team has run it yet, so there is no anchor to point at."
+  - declared:
+      id: legacy-extract
+      name: Legacy Nightly Extract
+      kind: service
+      status: deprecated
+      rationale: No organization has published a document that owns it; the team still depends on it weekly.
+    scope: established
+    anchors:
+      - legacy-extract-drop
+anchors:
+  - id: claims-intake-counts
+    label: The saved query that returns yesterday's intake counts
+    location: url:https://reports.example.invalid/saved/claims-intake
+  - id: legacy-extract-drop
+    label: The folder the nightly extract writes into
+    location: url:https://files.example.invalid/legacy-extract
+    note: Reachable only from the internal network.
+outputs:
+  roles:
+    - analyst
+    - engineer
+  guidance: Start from the view; it says which of the two organizations owns each fact.
+  destination: file:views/example-crossing-context
+limitations:
+  - "The platform office's release cadence is faster than this document's, so a reference can be a release behind for a week."
+access_failures:
+  - system: example-platform#context-server
+    attempt: Requested a session through the platform office's access form.
+    outcome: Pending since the last release; the system stays not-established until it clears.

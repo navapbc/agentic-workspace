@@ -1,0 +1,418 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Context Fabric shared definitions, contract 1",
+  "description": "The vocabulary the three tier contracts share. Each tier references this file by relative path, so validation resolves inside the tree and never reaches the network.",
+  "$comment": "A released contract directory is immutable: changing a shape means creating schemas/<tier>/<n+1>/, never editing <n> in place. Each rule a finding code names carries that code as `x-finding-code`, so a test can map a validator error back to the code without keeping a second copy of the rule.",
+  "$defs": {
+    "identifier": {
+      "title": "Identifier",
+      "description": "A lowercase-kebab slug. Identifiers reach filenames, view paths, and qualified references, so one that would need quoting or case-folding downstream is rejected here instead.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "x-finding-code": "IDENTIFIER_INVALID"
+    },
+    "env_name": {
+      "title": "Environment variable name",
+      "description": "The name of an environment variable, in the shape every shell agrees on: upper case, digits, and underscores.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "x-finding-code": "IDENTIFIER_INVALID"
+    },
+    "text": {
+      "title": "Text",
+      "description": "A line of prose written for a human reader. Never a credential, never a path that resolves on one machine.",
+      "type": "string",
+      "minLength": 1
+    },
+    "release": {
+      "title": "Release",
+      "description": "The release number of a document. It starts at 1 and rises by one each time the document is released; a reference records the release it was written against.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "title": "Status",
+      "description": "Where a system or interface sits in its life. A retired entry stays in the document rather than disappearing, so a reference to it fails loudly instead of silently.",
+      "enum": [
+        "active",
+        "deprecated",
+        "retired"
+      ]
+    },
+    "location": {
+      "title": "Location",
+      "description": "Where another document can be read: url:https://... for anything outside this tree, or file:<path> relative to the tree that owns the referring document. No upward segment is allowed anywhere in the path.",
+      "type": "string",
+      "allOf": [
+        {
+          "$comment": "The grammar. An absolute path behind the file: prefix is still an absolute path, which is why the first segment may not start with a slash.",
+          "pattern": "^(url:https://\\S+|file:[^/\\s]\\S*)$",
+          "x-finding-code": "LOCATION_INVALID"
+        },
+        {
+          "$comment": "No `..` segment anywhere, rather than no net escape. A normalizing rule asks every reviewer to redo the arithmetic, and one of them eventually gets it wrong.",
+          "not": {
+            "pattern": "(^|[/:])\\.\\.(/|$)"
+          },
+          "x-finding-code": "LOCATION_ESCAPES_ROOT"
+        }
+      ]
+    },
+    "upstream_ref": {
+      "title": "Upstream reference",
+      "description": "A reference to another document: which document, which release it was written against, and where to read it. The one shape Bounded Context `extends` and Individual `bindings` both use.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "release",
+        "location"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of the referenced document."
+        },
+        "release": {
+          "$ref": "#/$defs/release",
+          "description": "The release of the referenced document this reference was written against."
+        },
+        "location": {
+          "$ref": "#/$defs/location",
+          "description": "Where the referenced document can be read."
+        }
+      }
+    },
+    "maintainer": {
+      "title": "Maintainer",
+      "description": "Who answers for a fact: either an alias standing for a team or role, or the id of an Individual document. Exactly one of the two, because a fact with two owners has none.",
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "alias": {
+          "$ref": "#/$defs/identifier",
+          "description": "A team or role alias. Never a person's name: this document is shared and may be public."
+        },
+        "individual": {
+          "$ref": "#/$defs/identifier",
+          "description": "The id of an Individual document."
+        }
+      }
+    },
+    "organization": {
+      "title": "Organization",
+      "description": "The organization whose facts this document carries. Nesting is a parent reference only; children are derived when views are generated.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier",
+          "description": "The organization's identifier."
+        },
+        "name": {
+          "$ref": "#/$defs/text",
+          "description": "What the organization calls itself."
+        },
+        "parent": {
+          "$ref": "#/$defs/identifier",
+          "description": "The identifier of the organization this one sits inside, when it sits inside one."
+        },
+        "maintainer": {
+          "$ref": "#/$defs/maintainer",
+          "description": "Who answers for this organization's entry."
+        }
+      }
+    },
+    "https_url": {
+      "title": "Transport-safe URL",
+      "description": "An HTTPS URL. Plain HTTP is allowed only against a loopback address, which cannot leave the machine and so has no transport to protect.",
+      "type": "string",
+      "pattern": "^(https://\\S+|http://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/\\S*)?)$",
+      "x-finding-code": "INTERFACE_URL_INSECURE"
+    },
+    "system_ref": {
+      "title": "Qualified system reference",
+      "description": "A reference to a system in another document, as <document-id>#<system-id>. An unqualified reference resolves today only because one checkout happens to hold one Org document.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*#[a-z0-9]+(-[a-z0-9]+)*$",
+      "x-finding-code": "SYSTEM_REF_UNQUALIFIED"
+    },
+    "secret_reference": {
+      "title": "Secret reference",
+      "description": "A reference naming where a credential lives, never the credential. Written as op://<vault>/<item>[/<section>]/<field>. The check is a grammar rather than an absence, so that a value nobody checked and a value that passed cannot look alike.",
+      "type": "string",
+      "pattern": "^op://[^/]+/[^/]+/[^/]+(/[^/]+)?$",
+      "x-finding-code": "SECRET_REFERENCE_MALFORMED"
+    },
+    "denylist": {
+      "$comment": "Data, not a constraint. Each entry is one shape the contracts reject, with the finding code its match reports and the scope it applies in: `all` runs over every string in every tier, `shared` over Org and Bounded Context only. The derived patterns below are the alternation of the entries carrying each code, in this order, each entry wrapped in (?:...) and joined with |. tests/schemas.test.sh recomposes them from this list and fails if the two differ, so the data and the compiled pattern cannot drift apart.",
+      "x-entries": [
+        {
+          "id": "private-key-banner",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+          "description": "The banner line of a private key. Nobody writes one deliberately, which is what makes it worth rejecting on sight."
+        },
+        {
+          "id": "github-token",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "gh[pousr]_[A-Za-z0-9]{16,}",
+          "description": "A forge access token."
+        },
+        {
+          "id": "aws-access-key-id",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "(AKIA|ASIA)[A-Z0-9]{16}",
+          "description": "A cloud access key id. Half a credential is still a credential."
+        },
+        {
+          "id": "chat-platform-token",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "xox[baprs]-[A-Za-z0-9-]{10,}",
+          "description": "A chat platform bot or user token."
+        },
+        {
+          "id": "signed-token",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "eyJ[A-Za-z0-9_-]{8,}\\.eyJ[A-Za-z0-9_-]{8,}\\.",
+          "description": "A signed token with its header and payload, recognizable by the encoding of its two leading segments."
+        },
+        {
+          "id": "authorization-header",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "[Aa]uthorization:[ \\t]*([Bb]asic|[Bb]earer)[ \\t]+[A-Za-z0-9._~+/=-]{8,}",
+          "description": "A complete authorization header, value included. Naming the header in prose is fine; carrying its value is not."
+        },
+        {
+          "id": "password-assignment",
+          "scope": "all",
+          "code": "SECRET_VALUE_FORBIDDEN",
+          "pattern": "([Pp]assword|PASSWORD)[ \\t]*[:=][ \\t]*[^\\s<>]{8,}",
+          "description": "A password assigned a value long enough not to be a placeholder. Prose about passwords, and an angle-bracket placeholder, both pass."
+        },
+        {
+          "id": "op-reference",
+          "scope": "shared",
+          "code": "SECRET_REFERENCE_FORBIDDEN",
+          "pattern": "[Oo][Pp]://",
+          "description": "The reference form the Individual tier is allowed to use, in a tier that is not. Matched in either casing: a denylist that knows one casing has a documented bypass."
+        },
+        {
+          "id": "vault-reference",
+          "scope": "shared",
+          "code": "SECRET_REFERENCE_FORBIDDEN",
+          "pattern": "[Vv]ault://",
+          "description": "A second vault scheme. The prohibition is on pointing at a credential store from a shared tier, not on one product."
+        },
+        {
+          "id": "secrets-manager-arn",
+          "scope": "shared",
+          "code": "SECRET_REFERENCE_FORBIDDEN",
+          "pattern": "arn:aws:secretsmanager:",
+          "description": "A cloud secret store reference."
+        },
+        {
+          "id": "home-variable",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "\\$HOME/",
+          "description": "A home-relative path spelled as an environment variable, which reads as portable and is not."
+        },
+        {
+          "id": "home-tilde",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "(^|[ \\t(,=])~/",
+          "description": "A home-relative path."
+        },
+        {
+          "id": "user-home-root",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "(^|[ \\t(,=])/(Users|home)/",
+          "description": "A path under a user home root. The leading boundary is what keeps a URL path such as /home/index from matching."
+        },
+        {
+          "id": "volume-root",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "(^|[ \\t(,=])/(Volumes|media|mnt)/",
+          "description": "A path on a mounted volume, which exists on exactly one machine."
+        },
+        {
+          "id": "system-root",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "(^|[ \\t(,=])/(Applications|Library|System|etc|opt|private|srv|tmp|usr|var)/",
+          "description": "An absolute path under a named filesystem root."
+        },
+        {
+          "id": "file-url",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "[Ff]ile://",
+          "description": "An absolute local path behind a URL scheme. The scheme makes it look like a location and changes nothing."
+        },
+        {
+          "id": "windows-drive",
+          "scope": "shared",
+          "code": "LOCAL_PATH_FORBIDDEN",
+          "pattern": "(^|[ \\t(,=])[A-Za-z]:\\\\",
+          "description": "A drive-lettered path."
+        }
+      ]
+    },
+    "finding_keywords": {
+      "$comment": "Data, not a constraint. Which finding code a bare JSON Schema keyword failure reports, for the keywords that have no subschema of their own to annotate. `required` is the only one today.",
+      "x-entries": [
+        {
+          "keyword": "required",
+          "code": "REQUIRED_KEY_MISSING",
+          "description": "A key the contract requires is absent."
+        }
+      ]
+    },
+    "no_secret_value": {
+      "title": "Free of credential shapes",
+      "description": "A string carrying no shape the denylist recognizes as a credential. Applies to every string in every tier, the Individual tier included: the tier's permission is to point at a secret, never to hold one.",
+      "$comment": "Derived. The pattern is the composition of the scope-`all` denylist entries; tests/schemas.test.sh recomposes it from the data.",
+      "type": "string",
+      "not": {
+        "pattern": "(?:-----BEGIN [A-Z ]*PRIVATE KEY-----)|(?:gh[pousr]_[A-Za-z0-9]{16,})|(?:(AKIA|ASIA)[A-Z0-9]{16})|(?:xox[baprs]-[A-Za-z0-9-]{10,})|(?:eyJ[A-Za-z0-9_-]{8,}\\.eyJ[A-Za-z0-9_-]{8,}\\.)|(?:[Aa]uthorization:[ \\t]*([Bb]asic|[Bb]earer)[ \\t]+[A-Za-z0-9._~+/=-]{8,})|(?:([Pp]assword|PASSWORD)[ \\t]*[:=][ \\t]*[^\\s<>]{8,})"
+      },
+      "x-finding-code": "SECRET_VALUE_FORBIDDEN"
+    },
+    "no_secret_reference": {
+      "title": "Free of secret references",
+      "description": "A string naming no credential store. Applies to the shared tiers only, which is the framework's one asymmetry: an Individual document is the only document that never travels.",
+      "$comment": "Derived. The composition of the denylist entries carrying SECRET_REFERENCE_FORBIDDEN.",
+      "type": "string",
+      "not": {
+        "pattern": "(?:[Oo][Pp]://)|(?:[Vv]ault://)|(?:arn:aws:secretsmanager:)"
+      },
+      "x-finding-code": "SECRET_REFERENCE_FORBIDDEN"
+    },
+    "no_local_path": {
+      "title": "Free of machine paths",
+      "description": "A string carrying no path that resolves on one machine and nowhere else. Shared facts travel between people and repositories, so a machine path in a shared document is wrong for every reader but its author.",
+      "$comment": "Derived. The composition of the denylist entries carrying LOCAL_PATH_FORBIDDEN.",
+      "type": "string",
+      "not": {
+        "pattern": "(?:\\$HOME/)|(?:(^|[ \\t(,=])~/)|(?:(^|[ \\t(,=])/(Users|home)/)|(?:(^|[ \\t(,=])/(Volumes|media|mnt)/)|(?:(^|[ \\t(,=])/(Applications|Library|System|etc|opt|private|srv|tmp|usr|var)/)|(?:[Ff]ile://)|(?:(^|[ \\t(,=])[A-Za-z]:\\\\)"
+      },
+      "x-finding-code": "LOCAL_PATH_FORBIDDEN"
+    },
+    "no_secret_reference_or_local_path": {
+      "title": "Shared-tier prohibition",
+      "description": "The two rules a shared tier adds to the credential denylist every tier carries: no secret reference, and no machine path.",
+      "$comment": "Two constraints rather than one merged alternation, so a failure says which of the two codes it is.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/no_secret_reference"
+        },
+        {
+          "$ref": "#/$defs/no_local_path"
+        }
+      ]
+    },
+    "shared_string": {
+      "title": "A string in a shared tier",
+      "description": "Every prohibition that applies to a string in an Org or Bounded Context document.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/no_secret_value"
+        },
+        {
+          "$ref": "#/$defs/no_secret_reference_or_local_path"
+        }
+      ]
+    },
+    "scan_all_tiers": {
+      "title": "Credential scan",
+      "description": "Applies the credential denylist to this value and to every value and property name nested anywhere under it.",
+      "$comment": "Recursive rather than a list of the fields that happen to hold strings today: a field added later is covered without anybody remembering to cover it.",
+      "allOf": [
+        {
+          "if": {
+            "type": "string"
+          },
+          "then": {
+            "$ref": "#/$defs/no_secret_value"
+          }
+        },
+        {
+          "if": {
+            "type": "array"
+          },
+          "then": {
+            "items": {
+              "$ref": "#/$defs/scan_all_tiers"
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object"
+          },
+          "then": {
+            "propertyNames": {
+              "$ref": "#/$defs/no_secret_value"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/scan_all_tiers"
+            }
+          }
+        }
+      ]
+    },
+    "scan_shared_tiers": {
+      "title": "Shared-tier scan",
+      "description": "Applies the credential denylist, the secret-reference prohibition, and the machine-path prohibition to this value and to every value and property name nested anywhere under it.",
+      "allOf": [
+        {
+          "if": {
+            "type": "string"
+          },
+          "then": {
+            "$ref": "#/$defs/shared_string"
+          }
+        },
+        {
+          "if": {
+            "type": "array"
+          },
+          "then": {
+            "items": {
+              "$ref": "#/$defs/scan_shared_tiers"
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object"
+          },
+          "then": {
+            "propertyNames": {
+              "$ref": "#/$defs/shared_string"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/scan_shared_tiers"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

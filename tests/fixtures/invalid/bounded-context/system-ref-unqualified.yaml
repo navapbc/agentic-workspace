@@ -1,0 +1,26 @@
+# SYSTEM_REF_UNQUALIFIED -- the reference names the system but not the document
+# that owns it. It resolves today only because one checkout happens to hold one
+# Org document; it stops resolving the moment documents live in two places.
+id: example-claims-context
+kind: bounded-context
+schema_version: 1
+release: 1
+identity:
+  name: Example Claims Context
+  purpose: What one analysis team needs in order to answer questions about claims intake.
+organizations:
+  - example-agency
+extends:
+  - id: example-agency
+    release: 1
+    location: file:documents/org/example-agency.yaml
+systems:
+  - ref: claims-warehouse
+    scope: not-established
+outputs:
+  roles:
+    - analyst
+  guidance: Read the view first.
+  destination: file:views/example-claims-context
+limitations: []
+access_failures: []

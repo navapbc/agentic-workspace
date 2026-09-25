@@ -3,6 +3,12 @@
 documents/**/individual/*.yaml
 individual.yaml
 
+# Planning and research artifacts stay local. This repository is public, and
+# those documents carry internal program and system detail that the framework
+# itself does not. They are the maintainer's working record, not a deliverable.
+docs/plans/
+docs/research/
+
 # The maintainer's exact real-name screening list (tests/lib/real-name-patterns.txt
 # holds the committed generic patterns).
 tests/local/

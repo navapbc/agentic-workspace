@@ -25,7 +25,7 @@ Set `skip_specs: true` on the change for work that carries no capability delta:
 ## What never belongs in a change
 
 - A spec that restates a fact already stated by a document or a schema. Facts live in `documents/`; specs describe capabilities.
-- A real organization, system, person, hostname, or credential. Examples are fictional; see `NOTICE`.
+- A real organization, system, person, hostname, or credential. Examples are fictional; see `NOTICE`. This repository is public, so an internal program or system name is a disclosure, not just a style problem.
 - An absolute machine path or an `op://` reference outside an Individual document. See `SECURITY.md`.
 - A hand edit to anything under `views/` or `templates/`. Both are generated -- change the source and regenerate.
 

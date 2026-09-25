@@ -3,8 +3,15 @@ Copyright 2026 Nava PBC
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-It succeeds the Agentic Workspace Starter Kit (v0.2.0), whose history remains
-reachable in this repository at tags v0.1.0 and v0.2.0. Every organization,
-system, person, and secret reference shipped here is fictional or a
-placeholder; real facts live in a practitioner's own documents root, never in
-this repository.
+It succeeds the Agentic Workspace Starter Kit, whose history stays reachable in
+this repository at tags v0.1.0 and v0.2.0 under the same license.
+
+This repository is public so that a Nava program can read the framework without
+an access request. Every organization, system, person, and secret reference
+committed here is fictional or a placeholder; real facts live in a
+practitioner's own documents root, which is outside this repository.
+
+The planning and research documents that produced this framework are
+deliberately not published here. They carry internal program and system detail
+that the framework itself does not, and they stay in the maintainer's local
+tree.

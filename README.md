@@ -36,4 +36,4 @@ Pre-release. `framework.json` carries the framework version and the contract ver
 
 ## License
 
-Apache-2.0. See `LICENSE` and `NOTICE`. Every organization, system, person, and secret reference in this repository is fictional.
+Apache-2.0. See `LICENSE` and `NOTICE`. Every organization, system, person, and secret reference committed here is fictional; the planning and research documents that produced the framework are not published in this repository.

@@ -34,9 +34,9 @@ Treat a clean validation run as one control among several. Review a document bef
 
 If you find a secret, a credential, or other sensitive content committed here -- or a template, schema, or script that could lead someone to leak one -- report it privately rather than opening an issue:
 
-> **joseoyola@navapbc.com** -- or open a private security advisory on this repository.
+> Open a **private security advisory** on this repository (Security -> Advisories -> Report a vulnerability). Nava staff can also reach the maintainer through internal channels.
 
-Include the file path and a short description. Reports are acknowledged and remediated promptly.
+Include the file path and a short description. Reports are acknowledged and remediated promptly. Please do not open a public issue for a suspected disclosure -- this repository is public.
 
 ## Scope
 

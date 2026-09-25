@@ -30,7 +30,6 @@ What deliberately **stays**, because removing it would break the work these docu
 
 - The `op://` scheme itself and its documented grammar (`op://<vault>/<item>/<field>`, `op://Example-Vault/...`). The Individual tier's whole secret contract is written in it.
 - Denylist pattern literals (`/Users/`, `$HOME/`, `/Volumes/`, `file:///Users/`) and fictional path examples (`/Users/name/doc.yaml`). These are the shapes the validator must match; deleting them would delete the requirement.
-- The maintainer's contact address in `CODE_OF_CONDUCT.md` and `SECURITY.md`, which is a published reporting channel, not an incidental identifier. Both files are outside the scrubbed trees.
 - `joseoyolas/agentic-workspace-hawks-landing` in `docs/repurposing.md`, which is the fork a human has to act on. A checklist row that cannot name its target is not executable.
 
 U6 adds the generic real-name patterns (`tests/lib/real-name-patterns.txt`) and the git-ignored exact list (`tests/local/real-names.txt`); `tests/repo-baseline.test.sh` already consumes the exact list when it is present.
@@ -45,7 +44,7 @@ The Verification Contract names `shellcheck --severity=warning` and `--severity=
 
 ### U1 -- the baseline test's leak scan is a denylist, not an allowlist
 
-An earlier draft allowlisted the placeholder tokens that may follow `/Users/` or `op://`. That passes a real account name the moment someone adds a new placeholder spelling. The check now rejects any segment that *looks* like a real account or vault -- an ordinary identifier that is not an angle-bracket token, an ellipsis, or one of `name`, `x`, `user`, `you`, `vault`, `Example-Vault` -- and additionally rejects any email address, any `.codex/attachments/<uuid>` path, and any `/tmp/compound-engineering` scratch path. Proven by planting each shape in a throwaway copy and watching the test fail.
+An earlier draft allowlisted the placeholder tokens that may follow `/Users/` or `op://`. That passes a real account name the moment someone adds a new placeholder spelling. The check now rejects any segment that *looks* like a real account or vault -- an ordinary identifier that is not an angle-bracket token, an ellipsis, or one of `name`, `x`, `user`, `you`, `vault`, `Example-Vault` -- and additionally rejects any email address, any harness attachment path carrying a real id, and any agent scratch path under the system temp directory. Proven by planting each shape in a throwaway copy and watching the test fail.
 
 ### U1 -- the review found the skip ledger missing, and it mattered
 
@@ -83,3 +82,19 @@ The digest was built from `rev-parse HEAD`, `status --porcelain` and `diff --cac
 `tests/run.sh` had a related split: `HERE` came from `BASH_SOURCE` and `ROOT` from `$PWD`, so it could discover one checkout's tests and assert another's tree. It now anchors `CE_REPO_ROOT` to its own parent and refuses (exit 2) when the two disagree -- which `tests/run.test.sh` exercises, and which is why that test must clear `CE_REPO_ROOT` before invoking a runner inside a temp copy.
 
 Two more gaps surfaced while verifying those fixes, both from planting the shape rather than reading the code: `git ls-files -c` lists a tracked path whether or not it still exists, so a **moved or deleted** document was silently dropped from the scan instead of failing it; and `grep` is line-based, so a **backslash continuation** (`git \` / `  push --force`) slipped every human-only pattern. The scan now fails on a tracked-but-absent file, and joins continuations with `awk` before matching.
+
+### 2026-09-25 -- public, Apache-2.0, and the planning documents stay out
+
+Two product decisions, taken before the first push.
+
+**The repository stays public, under Apache-2.0.** The original plan (R39) made `navapbc/agentic-workspace` private before any framework content reached it. Public visibility is what lets a Nava program read the framework without an access request, and on GitHub's Free plan it is also the only way to get a set of controls a private repo would not have had at all: branch protection on `main`, secret scanning with push protection, code scanning, private vulnerability reporting, and unmetered Actions minutes. The license carried over from the starter kit unchanged, so the kit's history and the framework are under the same terms and there is no seam at the empty-tree commit. The fork `joseoyolas/agentic-workspace-hawks-landing` stays public and stays in the fork network, so the irreversible "Leave fork network" action is never needed.
+
+A licensing detour is recorded here because the reasoning is worth keeping: for one revision the repository was public with `LICENSE` and `CODE_OF_CONDUCT.md` removed and `NOTICE` asserting that no rights were granted. That is a coherent position -- source-available, not open source -- but it is strictly more restrictive than the kit it succeeds, and "decide later" was not available: leaving the kit's `LICENSE` in place ships Apache-2.0 by default, and removing it ships all-rights-reserved. The decision was to keep Apache-2.0. **Public plus Apache-2.0 means this repository is open source in substance already.** What stays deferred is promotion and external contribution intake, not the license.
+
+The one deviation from carrying the community files over verbatim: the Contributor Covenant's reporting contact is a non-personal channel rather than the maintainer's address. Every root Markdown file is screened for email addresses, and re-publishing a personal address on a new public repository when an internal route exists is a step backwards.
+
+**The planning and research documents are not committed.** They carry the program and system detail the framework deliberately does not: the trial's reachability findings, internal system names, and the program vocabulary. A scrub is the wrong control for that on a public repository, because the judgement about what counts as internal has to be made per sentence and gets it wrong once. Absence is the control. `docs/plans/` and `docs/research/` are git-ignored and live in the maintainer's local tree.
+
+**The part worth remembering:** untracking was not enough. Those 18 files had already landed in one commit, and a commit reachable from `HEAD` publishes on push whether or not the files are in the working tree. The branch was rebuilt to drop that commit before anything was pushed, and the backup tag that still carried it was deleted. `tests/repo-baseline.test.sh` now asserts both conditions -- nothing tracked, and nothing reachable from `HEAD` -- because only the second one survives a `git rm --cached`.
+
+The leak screening that would have run over those two trees now runs over the prose the repository does publish, and it earned its place immediately: it caught an agent scratch path under the system temp directory that had reached this very file.

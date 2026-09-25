@@ -71,6 +71,13 @@ for f in AGENTS.md CLAUDE.md README.md START-HERE.md CHANGELOG.md LICENSE NOTICE
 done
 pass "every baseline file is present"
 
+grep -q 'Apache License, Version 2.0' NOTICE || \
+  fail "NOTICE does not name the Apache-2.0 license the repository ships under"
+grep -q 'Apache License' LICENSE || fail "LICENSE is not the Apache License text"
+grep -q 'not published here' NOTICE || \
+  fail "NOTICE does not record that the planning and research documents are deliberately unpublished"
+pass "public and Apache-2.0: LICENSE, NOTICE, and CODE_OF_CONDUCT all present and consistent"
+
 [ -L CLAUDE.md ] && fail "CLAUDE.md is a symlink; it must be a real file"
 grep -qx '@AGENTS.md' CLAUDE.md || fail "CLAUDE.md does not import AGENTS.md with a bare @AGENTS.md line"
 pass "CLAUDE.md is a real file importing AGENTS.md"
@@ -222,66 +229,70 @@ esac
 [ -e "$copy_path" ] && fail "tmp_repo_copy did not clean up on exit: $copy_path"
 pass "tmp_repo_copy: spaced path, .git and framework.json preserved, removed on exit"
 
-# --- docs/plans and docs/research are scrubbed --------------------------------
-# A placeholder is an <angle-bracket> token, an ellipsis, or one of a tiny
-# documented set. Anything that looks like a real account, vault, or attachment id
-# is a leak. docs/experiments/README.md records the full rule.
+# --- the planning artifacts are not published ---------------------------------
+# This repository is public. docs/plans/ and docs/research/ carry internal
+# program and system detail, so they stay in the maintainer's local tree. A
+# scrub is not the control here; absence is.
+
+for d in docs/plans docs/research; do
+  tracked="$(git ls-files -- "$d" | wc -l | tr -d ' ')"
+  [ "$tracked" -eq 0 ] || fail "$tracked file(s) under $d are tracked; this repository is public and they must not be"
+  if [ -d "$d" ]; then
+    probe="$d/__publish_probe__.md"
+    : > "$probe"
+    if git check-ignore -q "$probe"; then rm -f "$probe"; else
+      rm -f "$probe"
+      fail "$d exists but is not git-ignored; a new file there would be published on the next commit"
+    fi
+  fi
+done
+pass "docs/plans and docs/research are untracked and git-ignored"
+
+# Absence from the working tree is not enough: a commit reachable from HEAD
+# would publish them on push just the same.
+in_history="$(git log --name-only --format= HEAD -- docs/plans docs/research | grep -c . || true)"
+[ "$in_history" -eq 0 ] || \
+  fail "$in_history planning-document path(s) appear in commits reachable from HEAD; pushing would publish them"
+pass "no commit reachable from HEAD carries a planning or research document"
+
+# --- the prose this repository DOES publish ------------------------------------
+# Everything tracked under docs/ plus the root markdown is now world-readable.
 
 # Characters that end a path or a reference in prose. ']' must come first inside
 # a POSIX bracket expression, which is why this is built as a variable.
 TOKEN_STOP='] `"'"'"')|,'
 
-# Scan an explicit file list, never two directory names: a renamed or emptied
-# tree would otherwise make every grep match nothing and the scan report "clean".
-scrubbed=()
-missing=()
+published=()
 while IFS= read -r f; do
-  if [ -f "$f" ]; then scrubbed+=("$f"); else missing+=("$f"); fi
-done < <(git ls-files -co --exclude-standard -- docs/plans docs/research | sort)
-[ "${#missing[@]}" -eq 0 ] || \
-  fail "${#missing[@]} tracked file(s) under docs/plans or docs/research are missing from disk (${missing[0]} ...); a moved or deleted tree must not read as clean"
-[ "${#scrubbed[@]}" -gt 0 ] || \
-  fail "the scrub scan found no files under docs/plans or docs/research; it cannot report them clean"
-for d in docs/plans docs/research; do
-  [ -d "$d" ] || fail "$d does not exist; the scrub scan cannot report it clean"
-done
+  [ -f "$f" ] && published+=("$f")
+done < <(git ls-files -co --exclude-standard -- 'docs/*' '*.md' | sort -u)
+[ "${#published[@]}" -gt 0 ] || fail "found no published prose to screen; the scan cannot report it clean"
 
 leaks=0
 report_leak() { printf 'LEAK %s\n' "$*" >&2; leaks=$((leaks + 1)); }
 
-# Every check below is a byte-level ASCII match, so a file the greps cannot read
-# as text is unscannable, not clean. UTF-16 is the common way this arrives.
-# A NUL cannot survive command substitution, so probe by stripping instead of
-# matching: if removing NULs changes the file, it had some.
-for f in "${scrubbed[@]}"; do
+# A file the greps cannot read as text is unscannable, not clean.
+for f in "${published[@]}"; do
   if [ "$(LC_ALL=C tr -d '\000' < "$f" | wc -c)" -ne "$(wc -c < "$f")" ]; then
     report_leak "$f contains NUL bytes and cannot be scanned as text (UTF-16 or binary?)"
   fi
 done
 
-# Machine-path roots. The same four the AGENTS.md check above uses, plus the
-# home-relative forms. A documented pattern literal has no segment after the
-# root or carries a placeholder token; a real path names an account.
 for root in '/Users/' '/home/' '/Volumes/' 'file:///Users/'; do
   while IFS= read -r seg; do
     case "$seg" in
       ''|'...'|'…'|name|x|user|you|'<'*) : ;;
       *) report_leak "$root$seg looks like a real account or volume name" ;;
     esac
-  done < <(grep -aroEh "${root}[^${TOKEN_STOP}]*" "${scrubbed[@]}" 2>/dev/null \
+  done < <(grep -aroEh "${root}[^${TOKEN_STOP}]*" "${published[@]}" 2>/dev/null \
            | sed "s#^${root}##; s#/.*##" | sort -u)
 done
 
 # A root with nothing after it on the line is how a wrapped real path looks:
 # grep is line-based, so the account name on the continuation line is unseen.
-if grep -aEq '(/Users/|/home/|/Volumes/|op://)[[:space:]]*$' "${scrubbed[@]}" 2>/dev/null; then
+if grep -aEq '(/Users/|/home/|/Volumes/|op://)[[:space:]]*$' "${published[@]}" 2>/dev/null; then
   report_leak "a line ends in a bare path root or op:// prefix; a wrapped real path reads as a placeholder"
 fi
-
-# A home-relative path (~/... or $HOME/...) cannot carry an account name -- that
-# is what the tilde replaces -- so there is no segment worth screening. The real
-# risk in that shape is a Drive path carrying an account email, which the
-# GoogleDrive- and email checks below already cover.
 
 while IFS= read -r seg; do
   case "$seg" in
@@ -289,24 +300,22 @@ while IFS= read -r seg; do
     Example-Vault) : ;;
     *) report_leak "op://$seg/ names a real vault" ;;
   esac
-done < <(grep -aroEh "op://[^${TOKEN_STOP}]*" "${scrubbed[@]}" 2>/dev/null \
+done < <(grep -aroEh "op://[^${TOKEN_STOP}]*" "${published[@]}" 2>/dev/null \
          | sed 's#^op://##; s#/.*##' | sort -u)
 
-if grep -aEq 'GoogleDrive-[^ ]*@' "${scrubbed[@]}" 2>/dev/null; then
+if grep -aEq 'GoogleDrive-[^ ]*@' "${published[@]}" 2>/dev/null; then
   report_leak "a CloudStorage path carries an account email"
 fi
-if grep -aEq '\.codex/attachments/[0-9a-f]{8}-' "${scrubbed[@]}" 2>/dev/null; then
+if grep -aEq '\.codex/attachments/[0-9a-f]{8}-' "${published[@]}" 2>/dev/null; then
   report_leak "a harness attachment path carries a real attachment id"
 fi
-if grep -aqF '/tmp/compound-engineering' "${scrubbed[@]}" 2>/dev/null; then
-  report_leak "a scratch path under /tmp survived the scrub"
+if grep -aqF '/tmp/compound-engineering' "${published[@]}" 2>/dev/null; then
+  report_leak "a scratch path under /tmp reached published prose"
 fi
-if grep -aEq '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' "${scrubbed[@]}" 2>/dev/null; then
-  report_leak "an email address survived the scrub"
+if grep -aEq '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' "${published[@]}" 2>/dev/null; then
+  report_leak "an email address reached published prose"
 fi
 
-# The exact personal-identifier list. tests/local/ is git-ignored, so this input
-# is never present in CI; its absence is a SKIPPED STAGE (exit 3), never a pass.
 # Two lists. tests/lib/real-name-patterns.txt is committed and holds generic
 # EREs, so this stage runs in CI. tests/local/real-names.txt is git-ignored and
 # holds the maintainer's exact names, matched as fixed strings; its absence is a
@@ -318,11 +327,11 @@ if [ -f "$GENERIC_NAMES" ]; then
   while IFS= read -r pat; do
     [ -n "$pat" ] || continue
     case "$pat" in \#*) continue ;; esac
-    if grep -aqiE -- "$pat" "${scrubbed[@]}" 2>/dev/null; then
-      report_leak "/$pat/ from $GENERIC_NAMES matches under docs/plans or docs/research"
+    if grep -aqiE -- "$pat" "${published[@]}" 2>/dev/null; then
+      report_leak "/$pat/ from $GENERIC_NAMES matches published prose"
     fi
   done < "$GENERIC_NAMES"
-  pass "checked ${#scrubbed[@]} scrubbed file(s) against the generic patterns"
+  pass "screened ${#published[@]} published file(s) against the generic patterns"
 else
   fail "$GENERIC_NAMES is missing; it is committed and the screening stage needs it"
 fi
@@ -331,17 +340,17 @@ if [ -f "$REAL_NAMES" ]; then
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     case "$name" in \#*) continue ;; esac
-    if grep -aqiF -- "$name" "${scrubbed[@]}" 2>/dev/null; then
-      report_leak "a name from $REAL_NAMES appears under docs/plans or docs/research"
+    if grep -aqiF -- "$name" "${published[@]}" 2>/dev/null; then
+      report_leak "a name from $REAL_NAMES appears in published prose"
     fi
   done < "$REAL_NAMES"
-  pass "checked ${#scrubbed[@]} scrubbed file(s) against the maintainer's exact list"
+  pass "screened ${#published[@]} published file(s) against the maintainer's exact list"
 else
   note_skip "exact real-name screening: $REAL_NAMES is absent (git-ignored; U6 documents how to create it)"
 fi
 
-[ "$leaks" -eq 0 ] || fail "$leaks leak(s) under docs/plans or docs/research"
-pass "${#scrubbed[@]} scrubbed file(s) carry no machine path, secret reference, or personal identifier"
+[ "$leaks" -eq 0 ] || fail "$leaks leak(s) in published prose"
+pass "${#published[@]} published file(s) carry no machine path, secret reference, or personal identifier"
 
 printf '\nrepo-baseline: checks complete\n'
 finish

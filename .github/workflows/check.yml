@@ -37,8 +37,15 @@ jobs:
   probe:
     name: Baseline probe
     runs-on: ubuntu-latest
+    # The plan requires every session running these tools to opt out of
+    # telemetry and update checks. CI is such a session.
+    env:
+      OPENSPEC_TELEMETRY: "0"
+      OPENSPEC_NO_UPDATE_CHECK: "1"
+      OPENWIKI_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # The baseline test walks the kit history and the v0.1.0 / v0.2.0 tags.
           fetch-depth: 0
@@ -63,6 +70,16 @@ jobs:
           pin="$(jq -r '.tools.uv.version' framework.json)"
           curl -LsSf "https://astral.sh/uv/${pin}/install.sh" | sh
           printf '%s\n' "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install openspec at the framework.json pin
+        # Same reasoning as uv above: CI can install this, so it does. The
+        # alternative was allowlisting OPENSPEC_NOT_VALIDATED, which would mean
+        # the spec validation this repository made load-bearing never runs
+        # anywhere it is enforced.
+        run: |
+          pin="$(jq -r '.tools.openspec.version' framework.json)"
+          pkg="$(jq -r '.tools.openspec.package' framework.json)"
+          npm install -g "${pkg}@${pin}"
 
       - name: Gate
         run: |

@@ -270,7 +270,13 @@ TOKEN_STOP='] `"'"'"')|,'
 published=()
 while IFS= read -r f; do
   [ -f "$f" ] && published+=("$f")
-done < <(git ls-files -co --exclude-standard -- 'docs/*' '*.md' | sort -u)
+# openspec/*.yaml joins the set because openspec/config.yaml carries hand-written
+# prose drawn from planning documents this repository deliberately does not hold.
+# Its *.md artifacts are already covered by the '*.md' pathspec above. The scope
+# stays narrow on purpose: a blanket '*.yaml' would pull in tests/fixtures/, whose
+# invalid fixtures carry deliberately fake credential shapes that exist to be
+# matched.
+done < <(git ls-files -co --exclude-standard -- 'docs/*' '*.md' 'openspec/*.yaml' | sort -u)
 [ "${#published[@]}" -gt 0 ] || fail "found no published prose to screen; the scan cannot report it clean"
 
 leaks=0

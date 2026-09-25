@@ -53,6 +53,17 @@ jobs:
             fi
           done
 
+      - name: Install uv at the framework.json pin
+        # The optional JSON Schema stage is only optional on a contributor's
+        # machine. CI can install the tool, so it does -- the alternative is
+        # adding SCHEMA_NOT_VALIDATED to ALLOWED_SKIPS, which would mean the
+        # contracts this repository exists to define are never machine-checked
+        # anywhere. Allowlist a skip only when CI genuinely cannot satisfy it.
+        run: |
+          pin="$(jq -r '.tools.uv.version' framework.json)"
+          curl -LsSf "https://astral.sh/uv/${pin}/install.sh" | sh
+          printf '%s\n' "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Gate
         run: |
           # The skip codes CI can never satisfy, one per line. Everything else

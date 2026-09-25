@@ -10,6 +10,62 @@ One entry per attempt. Keep it short: what was tried, what happened, and what th
 
 ## Decisions taken during execution
 
+### U2 -- what the spec-per-change discipline actually cost, measured on the first change
+
+The plan requires OpenSpec from the first commit and stops after Phase A so this
+number is read before eleven more units are committed to the workflow it
+validates. Measured on `add-field-contracts`, the first real change.
+
+**Total propose-apply-archive cycle: 64 minutes.** That number alone is
+misleading, because most of it is work that would have happened anyway. The
+decomposition is the point:
+
+| Phase | Time | Would it exist without OpenSpec? |
+|---|---|---|
+| Propose (4 artifacts, validate) | 3 min | No -- pure overhead |
+| Apply (build the contracts, fixtures, renderer, guards) | ~53 min | Yes -- this is U3 |
+| Archive, and repair what archive produced | ~8 min | No -- pure overhead |
+
+**So the discipline costs roughly 11 minutes on a change with ~53 minutes of
+implementation: about 17% overhead, and the overhead is close to flat.** The
+propose and archive phases scale with the number of capabilities touched, not
+with the size of the implementation, so the ratio improves on larger changes and
+worsens on trivial ones. That is the shape to plan against: the `skip_specs`
+exemption for examples, marketing, release notes and tool bumps is not a
+convenience, it is what keeps the percentage sane.
+
+**Three costs that were not obvious before measuring:**
+
+1. **`openspec archive` writes a placeholder `## Purpose` for each newly created
+   capability, and `validate --all --strict` then fails on it.** Three
+   capabilities, three Purposes to write properly. This recurs per *new
+   capability*, not per change, so it front-loads: heavy now, near zero once the
+   capability set stabilises.
+2. **`rules:` keys are validated against the schema's artifact ids.** `spec` was
+   silently wrong until the tool named it (`Unknown artifact ID in rules:
+   "spec"` -- the id is `specs`). Cheap to fix, and only found because an
+   instructions command surfaced it rather than at validate time.
+3. **One-time learning that will not recur:** there is no `openspec propose`
+   CLI. Proposing is agent-authored; the CLI scaffolds (`openspec new change`),
+   validates, and archives. Finding that out was several minutes of the 3-minute
+   propose phase and is already spent.
+
+**What this measurement is not.** It is agent wall-clock, not a person's. A
+human reviewing each artifact would add time the agent does not spend, and would
+spend far longer than three minutes writing a proposal by hand. Read it as a
+floor for the overhead and a fair estimate of the ratio, not as a prediction of
+anyone's calendar.
+
+**The rule that justified the cost held up.** `openspec/config.yaml` requires
+every capability-affecting change to record its rejected alternatives, because a
+spec states what the system does and has nowhere to record what it chose not to
+do -- and the planning documents carrying that reasoning are deliberately kept
+out of this public repository. `tests/openspec.test.sh` enforces it, and was
+verified to fail on both a missing section and an empty one. Without that test
+the rule is prose, and prose-only rules are optional at change one and absent by
+change ten.
+
+
 ### U1 -- `kit-final` tag not created
 
 Row 0 offers `kit-final` only when no tag points at the kit head. `v0.2.0` points at `c4c0d19`, the kit head, so a second tag would add nothing. Recorded so row 0's proof is not read as a missed step.

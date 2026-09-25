@@ -10,6 +10,41 @@ One entry per attempt. Keep it short: what was tried, what happened, and what th
 
 ## Decisions taken during execution
 
+### Scope of the adoption measure -- what it does and does not test
+
+*(Product owner's decision, 2026-09-25, after review raised it.)*
+
+The primary success measure reads: **"at least one Nava program other than DMod
+authors or consumes an Org or Bounded Context document."** Review pointed out
+that the onboarding dress rehearsal satisfies it literally -- a colleague outside
+DMod authors a validated Org view from `START-HERE.md`, and the rehearsal then
+deletes what it produced. So the measure can be declared met by the project's
+own rehearsal.
+
+**The criterion is deliberately left as written.** Recorded here so nobody later
+reads a met criterion as more than it is:
+
+- **What it tests:** that someone who did not build the framework can point an
+  agent at it and produce a valid, useful document. That is a real property and
+  a hard one, and it is the thing most likely to be wrong.
+- **What it does not test:** that a program chose to adopt it and kept using it.
+  Sustained adoption is not measured by v1.
+- **Therefore:** the complexity bet at the heart of this plan -- that three
+  versioned tiers, generated views and release mechanics beat the trial's one
+  self-contained file per product -- **is not falsified by v1 shipping
+  successfully.** Nothing in the Definition of Done can tell you the bet was
+  right. Judging that needs evidence this plan does not collect: a second
+  program's own documents, still in use, some months later.
+
+The alternative considered was to exclude the rehearsal and require the document
+to outlive it under the adopting program's ownership. That would have made the
+measure falsifiable, at the cost of not being able to call v1 done until an
+outside team adopted it -- potentially months after the code was finished.
+Deliberately not chosen: the gate on shipping should be "is it usable", and
+"did it get adopted" is a question to answer honestly later rather than a
+release blocker.
+
+
 ### U2 -- what the spec-per-change discipline actually cost, measured on the first change
 
 The plan requires OpenSpec from the first commit and stops after Phase A so this

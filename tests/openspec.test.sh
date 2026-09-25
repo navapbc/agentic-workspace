@@ -114,4 +114,49 @@ pass "the rule rejects both a missing section and an empty one"
 [ "$checked" -gt 0 ] || fail "no capability-affecting change was checked; the rule would pass vacuously forever and nobody would notice"
 pass "checked $checked capability-affecting change(s)"
 
+# ------------------------------------------- every capability traces to a change
+
+# R34 says changes to field contracts, scripts, and skills are proposed as specs
+# before they are implemented. `openspec validate --all --strict` proves a change
+# is well FORMED; it has no way to notice a capability that arrived with no
+# change at all -- someone writing openspec/specs/<cap>/spec.md by hand, or an
+# archive that was later deleted. That is the failure this catches: not a
+# malformed proposal, but a missing one.
+#
+# The trace is by directory name: a capability exists under openspec/specs/<cap>/
+# and the change that established it carries specs/<cap>/spec.md.
+traced=0
+for spec in openspec/specs/*/; do
+  [ -d "$spec" ] || continue
+  cap="$(basename "$spec")"
+
+  found=""
+  for arch in openspec/changes/archive/*/; do
+    [ -d "$arch" ] || continue
+    if [ -f "${arch}specs/${cap}/spec.md" ]; then
+      found="${arch%/}"
+      break
+    fi
+  done
+
+  [ -n "$found" ] || fail "capability '${cap}' has a spec but no archived change established it. Every capability traces to a change (R34): a spec says what the system does and cannot say why it beat the alternatives, so a capability with no archived change has no public record of its reasoning. If this capability predates the rule, archive a change for it rather than deleting the spec."
+
+  pass "capability '${cap}' traces to $(basename "$found")"
+  traced=$((traced + 1))
+done
+
+[ "$traced" -gt 0 ] || note_skip NO_CAPABILITIES_YET "openspec/specs/ holds no capability, so the trace check had nothing to verify"
+
+# Prove the trace check rejects an untraceable capability, in a scratch copy --
+# the real tree is all-traceable by construction, so the check would otherwise
+# never be observed failing.
+probe="$(_ce_mktemp_spaced openspec-trace-probe)"
+mkdir -p "$probe/specs/invented-capability" "$probe/archive/some-change/specs/other-capability"
+untraced=""
+for arch in "$probe"/archive/*/; do
+  [ -f "${arch}specs/invented-capability/spec.md" ] || untraced="invented-capability"
+done
+[ "$untraced" = "invented-capability" ] || fail "the trace check accepted a capability no archived change establishes"
+pass "the trace check rejects a capability no archived change establishes"
+
 finish

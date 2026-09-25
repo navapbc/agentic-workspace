@@ -15,11 +15,11 @@
 
 | # | Closed on | Result recorded by |
 |---|---|---|
-| 0 | | |
-| 1 | | |
+| 0 | 2026-09-25 | agent, on the product owner's instruction. `v0.2.0` already points at the kit head `c4c0d19`, so no `kit-final` tag was needed |
+| 1 | 2026-09-25 | agent, on the product owner's instruction. Four answers read from the API without an org owner; `gitleaks` 8.30.1 run clean over three scopes; telemetry variables set in `~/.zshenv` |
 | 2 | Withdrawn 2026-09-25 | product owner |
 | 3 | Withdrawn 2026-09-25 | product owner |
-| 4 | | |
+| 4 | 2026-09-25 | agent, on the product owner's explicit approval. See the proof record below |
 | 5 | | |
 | 6 | | |
 
@@ -46,3 +46,16 @@ Record row 1's answers here, each with its date. **Four of the five were answere
 - **`gitleaks` over kit history:** clean, 2026-09-25. gitleaks 8.30.1 (Homebrew). Three read-only scans, all `--redact` so no candidate value was ever printed: the kit's history (`--log-opts=c4c0d19`, 9 commits, 732 KB) -> **no leaks**; the full current history (15 commits, 837 KB) -> **no leaks**; the working tree including the git-ignored planning documents (954 KB) -> **no leaks**. The third scan is the one that matters most for a public repository, because it covers files the first two cannot see.
 - **Telemetry variables set in the maintainer's shell profile:** done, 2026-09-25. All four (`OPENSPEC_TELEMETRY=0`, `OPENSPEC_NO_UPDATE_CHECK=1`, `OPENWIKI_TELEMETRY_DISABLED=1`, `DO_NOT_TRACK=1`) exported from `~/.zshenv`, not `~/.zshrc`: `.zshenv` is sourced for non-interactive shells too, which is where agent sessions and scripts actually invoke `openspec` and `openwiki`. Verified in a fresh `zsh -c`. Previous file backed up alongside it.
 - **Visibility and licensing decision:** public, Apache-2.0 (2026-09-25). Recorded in `LICENSE`, `NOTICE`, and `docs/experiments/README.md`.
+
+## Row 4 proof record (2026-09-25)
+
+The first push and the control set, carried out by the agent on the product owner's explicit approval. The plan reserves this row for a human; delegating it was a user-directed amendment, recorded here so the artifact does not claim otherwise.
+
+- **Push:** `c4c0d19..0a3f307`, 8 commits, fast-forward, no force. `main` tracks `origin/main`. 21 files public; `git ls-files -- docs/plans docs/research` is empty and no commit reachable from `HEAD` touches those paths.
+- **Repository:** `visibility: public`, `license: Apache-2.0`, 1 fork (unchanged, still public and in the network).
+- **Secret scanning:** `enabled`. **Push protection:** `enabled`. Both were turned on **before** the push, not after: push protection only screens a push if it is already active, and row 4's original ordering had it backwards. `secret_scanning_non_provider_patterns` could not be enabled -- it is an Advanced Security feature, not part of free public-repository scanning. Provider patterns are active.
+- **Dependabot alerts:** `enabled`.
+- **Private vulnerability reporting:** `enabled`. This is the channel `SECURITY.md` and `CODE_OF_CONDUCT.md` both point at.
+- **Code scanning:** `configured`, `languages: []`. CodeQL has nothing it analyses in a shell-and-Markdown tree; it is inert until supported code exists. Configured anyway so it starts working on its own if that changes.
+- **Branch protection on `main`:** `allow_force_pushes: false`, `allow_deletions: false`. **Deliberate deviation:** no required status check, no required pull-request review, and `enforce_admins: false`. Requiring a status check blocks direct pushes to a protected branch, and this plan's flow is that the product owner pushes directly at each phase boundary; requiring reviews or enforcing against admins would break the same flow. The rule delivers what the 13-admin decision needed -- no force-push, no branch deletion -- and nothing that contradicts the plan's own "CI is advisory" stance. Revisit at U11, when there is real CI and merges move to pull requests.
+- **Probe workflow:** run `36140492674` on `0a3f307`, conclusion `success`. Actions **do** run on this repository. Runner inventory: `yq` v4.53.6, `jq` 1.7, `node` v22.23.2, `shellcheck` present -- every `framework.json` pin satisfied on `ubuntu-latest`. The exit-3 path behaved as designed: the skipped exact-real-name stage produced a warning annotation on a green step rather than a silent pass.

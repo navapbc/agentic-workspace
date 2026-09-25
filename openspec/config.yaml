@@ -1,0 +1,84 @@
+schema: spec-driven
+
+context: |
+  Context Fabric is a schema-forward framework for organizational context.
+  Three nested, versioned document tiers carry facts, and a deterministic
+  generator projects them into standalone views an agent reads directly:
+
+    Org             - systems, interfaces, maintainers. Shared facts.
+    Bounded Context - the context one set of workflows needs. References
+                      and extends Org facts; never copies them.
+    Individual      - machine bindings. The ONLY tier where local paths and
+                      secret references (op://, never a secret value) may live.
+
+  Capabilities this repository governs, one spec each:
+    org-contract, bounded-context-contract, individual-contract,
+    view-contract, view-generation, validation, release-mechanics,
+    and one per shipped skill.
+
+  Conventions:
+    - Documents are YAML; contracts are JSON Schema (Draft 2020-12), one
+      directory per tier per integer contract version.
+    - Every path the framework creates is lowercase-kebab ASCII. macOS and
+      Windows are case-insensitive while Linux is not, so mixed case produces
+      checkouts that work on one machine and break on another.
+    - Shell is POSIX/bash and must run on BSD (macOS) as well as GNU userland.
+    - Conventional commits.
+    - This repository is PUBLIC. It carries no real organization, system, or
+      person names; shipped examples are fully fictionalized.
+
+rules:
+  proposal:
+    - >-
+      A change that establishes or alters a capability MUST include a
+      "## Rejected alternatives" section naming each alternative considered and
+      why it lost. This is not ceremony. A spec states what the system does and
+      has no place to record what it chose not to do, and the planning
+      documents that carry that reasoning are deliberately kept out of this
+      public repository. An archived change is therefore the ONLY public record
+      of why a capability beat its alternatives. A practice that is optional at
+      change one is absent by change ten, so this is required from the first
+      change and enforced by tests/openspec.test.sh.
+    - >-
+      State reasoning without naming a real internal program, system, client,
+      or person. This tree is public and is screened like any other published
+      prose.
+    - >-
+      Set `skip_specs: true` for a change that ships no capability: shipped
+      examples, the marketing package, release notes, a tool version bump, and
+      anything under openwiki/.
+
+  specs:
+    - >-
+      A spec states what the system does, in terms a reader outside this
+      repository can check. It never restates a fact that belongs in a governed
+      document (a system's URL, a maintainer, an interface) -- those live in
+      documents/ and reach agents through generated views, and duplicating one
+      here creates a second source of truth that drifts silently.
+    - >-
+      Do not restate schema field lists. Point at the contract under schemas/
+      and describe the behavior the contract enables.
+
+  tasks:
+    - >-
+      Name the verification for each task. A task whose completion cannot be
+      observed -- by a test, an exit code, or a named file's contents -- is not
+      a task.
+
+operations:
+  apply:
+    guidance:
+      - >-
+        tests/run.sh is the gate and must exit 0 locally before a push. In CI it
+        exits 3 with only REAL_NAMES_NOT_VALIDATED, which the workflow accepts;
+        any other skipped-stage code fails the job by design.
+      - >-
+        Every new skip needs a SCREAMING_SNAKE code. An uncoded skip is a usage
+        error, because a skip CI cannot classify is exactly the one it must
+        refuse.
+  archive:
+    guidance:
+      - >-
+        Before archiving, confirm the change's rejected-alternatives section
+        survived the apply step. It is the artifact the archive exists to
+        preserve.

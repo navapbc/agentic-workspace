@@ -40,9 +40,10 @@
     },
     "check-jsonschema": {
       "runner": "uv",
-      "version": null,
+      "version": "0.38.2",
       "required": false,
-      "purpose": "optional JSON Schema stage; absent means the schema check reports not validated"
+      "purpose": "optional JSON Schema stage; absent means the schema check reports not validated. Pinned: an unpinned validator means the contract is checked against whatever version resolved. Runs with --regex-variant default (ECMAScript), so contract patterns avoid lookarounds and inline flags.",
+      "min": "0.38.2"
     },
     "skills-ref": {
       "package": null,
@@ -50,11 +51,22 @@
       "required": false,
       "purpose": "skill frontmatter and packaging checks",
       "pinned_by": "U9"
+    },
+    "uv": {
+      "version": "0.11.6",
+      "min": "0.11.6",
+      "required": false,
+      "purpose": "runs the optional JSON Schema stage; CI installs this pin so the stage executes rather than skipping"
     }
   },
   "lookup": {
     "individual_env": "CONTEXT_FABRIC_INDIVIDUAL",
     "individual_default": "~/.config/context-fabric/individual.yaml",
     "workspace_default": "~/context-fabric/"
+  },
+  "contracts_migratable_from": {
+    "org": 1,
+    "bounded-context": 1,
+    "individual": 1
   }
 }

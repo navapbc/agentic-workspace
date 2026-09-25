@@ -1,0 +1,18 @@
+# LOCATION_INVALID -- an absolute machine path where a location belongs. The
+# Individual tier is where machine paths are right, which is exactly why this
+# one is worth a fixture here: `location` is the field that travels into the
+# reference the bound document is read through, and it is governed by the same
+# grammar in every tier.
+id: example-practitioner
+kind: individual
+schema_version: 1
+bindings:
+  - ref:
+      id: example-claims-context
+      release: 1
+      location: /Users/name/context-fabric-documents/bounded-context/example-claims-context.yaml
+    documents_root: /Users/name/context-fabric-documents
+    framework_root: /Users/name/context-fabric
+    output_root: /Users/name/context-fabric-documents/views
+    harness:
+      id: example-harness

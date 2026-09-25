@@ -42,9 +42,9 @@ expect() {
 }
 
 plant zzpass   'pass "probe"'
-plant zzskip   'note_skip "an optional tool is absent"
+plant zzskip   'note_skip ZZ_OPTIONAL_TOOL_ABSENT "an optional tool is absent"
 finish'
-plant zzhard   'skip "the whole script cannot run"'
+plant zzhard   'skip ZZ_CANNOT_RUN "the whole script cannot run"'
 plant zzusage  'usage_error "a required tool is absent"'
 plant zzfail   'fail "a check failed"'
 
@@ -60,6 +60,38 @@ expect 3 "$(run_copy zzpass zzskip)"                 "pass + skip"
 expect 2 "$(run_copy zzpass zzskip zzusage)"         "pass + skip + usage error"
 expect 1 "$(run_copy zzpass zzskip zzusage zzfail)"  "pass + skip + usage error + failure"
 expect 1 "$(run_copy zzskip zzfail)"                 "skip + failure"
+
+# Skip codes. Exit 3 alone cannot tell a skip CI could never satisfy (the
+# git-ignored real-name list) from a check that silently did not run, so CI
+# reads the codes instead. Two properties hold that up: an unclassified skip
+# must be impossible to write, and the codes must actually reach the summary.
+run_copy_out() {
+  ( cd "$COPY" && env -u CE_REPO_ROOT bash tests/run.sh "$@" ) 2>/dev/null || true
+}
+
+plant zzuncoded 'note_skip "no code at all"
+finish'
+expect 2 "$(run_copy zzuncoded)"                     "a skip with no code is a usage error, not a silent pass"
+
+plant zzlower   'note_skip not_screaming "lowercase code"
+finish'
+expect 2 "$(run_copy zzlower)"                       "a skip whose code is not SCREAMING_SNAKE is a usage error"
+
+codes_line="$(run_copy_out zzskip zzhard | sed -n 's/^SKIPPED_CODES: //p')"
+case " $codes_line " in
+  *" ZZ_OPTIONAL_TOOL_ABSENT "*) : ;;
+  *) fail "SKIPPED_CODES omitted a deferred skip's code; got '$codes_line'" ;;
+esac
+case " $codes_line " in
+  *" ZZ_CANNOT_RUN "*) : ;;
+  *) fail "SKIPPED_CODES omitted an immediate skip's code; got '$codes_line'" ;;
+esac
+pass "SKIPPED_CODES names every stage that skipped -> $codes_line"
+
+if run_copy_out zzpass | grep -q '^SKIPPED_CODES:'; then
+  fail "a run with no skips still printed a SKIPPED_CODES line"
+fi
+pass "a run with no skips prints no SKIPPED_CODES line"
 
 # A test script that crashes without using the library still fails the run.
 printf '#!/usr/bin/env bash\nexit 42\n' > "$COPY/tests/zzcrash.test.sh"

@@ -9,6 +9,10 @@
 #   2  usage or environment error (a required tool is missing, bad arguments)
 #   3  a stage was skipped because an optional tool is absent -- never 0
 #
+# Every skip carries a SCREAMING_SNAKE code (see _ce_record_skip). tests/run.sh
+# aggregates them and prints one `SKIPPED_CODES:` line, which CI reads to decide
+# whether a skip is one it could never have satisfied.
+#
 # The library never sets shell options: the sourcing script owns `set -euo pipefail`.
 
 # shellcheck shell=bash
@@ -38,21 +42,43 @@ fail() {
   exit "$EXIT_FAIL"
 }
 
-# skip <message...> -- report a skipped stage on stderr and exit 3 immediately.
-# Use this when the whole test script cannot run.
+# Every skip carries a SCREAMING_SNAKE code. The code is what lets a reader --
+# and CI -- tell the two kinds of skip apart: one CI could never satisfy (the
+# exact real-name list is git-ignored by design and cannot exist in a CI
+# checkout) and one that means a check silently did not run. Exit 3 alone cannot
+# distinguish them, so CI would have to treat every skip as green or every skip
+# as red, and both are wrong. The code is mandatory rather than optional because
+# an unclassified skip is exactly the case CI must refuse, and making it
+# impossible to write is cheaper than catching it later.
+_ce_record_skip() {
+  local code="${1:-}"
+  if ! [[ "$code" =~ ^[A-Z][A-Z0-9_]*$ ]]; then
+    usage_error "skip/note_skip needs a SCREAMING_SNAKE code as its first argument; got '${code}'"
+  fi
+  shift
+  printf 'SKIP[%s]: %s\n' "$code" "$*" >&2
+  # CE_SKIP_LEDGER is set by tests/run.sh so it can aggregate codes across test
+  # scripts, which are separate processes. Unset when a script runs standalone.
+  if [ -n "${CE_SKIP_LEDGER:-}" ]; then
+    printf '%s\n' "$code" >> "$CE_SKIP_LEDGER"
+  fi
+}
+
+# skip <CODE> <message...> -- report a skipped stage on stderr and exit 3
+# immediately. Use this when the whole test script cannot run.
 skip() {
-  printf 'SKIP: %s\n' "$*" >&2
+  _ce_record_skip "$@"
   exit "$EXIT_SKIPPED"
 }
 
 _CE_SKIPPED=0
 
-# note_skip <message...> -- record that ONE stage was skipped and keep going.
-# The script must end with `finish`, which then exits 3. Without this ledger a
-# script that skips a stage and runs to the end would exit 0 and report a pass
-# for a check that never ran.
+# note_skip <CODE> <message...> -- record that ONE stage was skipped and keep
+# going. The script must end with `finish`, which then exits 3. Without this
+# ledger a script that skips a stage and runs to the end would exit 0 and report
+# a pass for a check that never ran.
 note_skip() {
-  printf 'SKIP: %s\n' "$*" >&2
+  _ce_record_skip "$@"
   _CE_SKIPPED=$((_CE_SKIPPED + 1))
 }
 

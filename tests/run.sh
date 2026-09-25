@@ -7,6 +7,9 @@
 #   3  every test that ran passed, but at least one stage was skipped for a
 #      missing optional tool -- a skipped stage never reports 0
 #
+# On exit 3 the run prints `SKIPPED_CODES: <CODE>...`, naming every stage that
+# skipped. CI requires that line to contain only codes it could never satisfy.
+#
 # Precedence when several occur: 1 > 2 > 3 > 0.
 #
 # Behavioral tests copy the tree with tmp_repo_copy and run there; the real-tree
@@ -79,6 +82,13 @@ if [ "${#TESTS[@]}" -eq 0 ]; then
   usage_error "no test scripts matched; tests/run.sh --list shows what is available"
 fi
 
+# One ledger per run, under the library's temp root so its own EXIT trap removes
+# it. Test scripts are separate processes, so a shell variable cannot carry their
+# skip codes back here; an exported path can.
+CE_SKIP_LEDGER="$_CE_TMP_ROOT/skip-codes"
+export CE_SKIP_LEDGER
+: > "$CE_SKIP_LEDGER"
+
 snapshot_tree "$ROOT"
 
 worst="$EXIT_PASS"
@@ -105,6 +115,11 @@ printf '\n===============================\n'
 printf 'ran %s test script(s)\n' "${#TESTS[@]}"
 if [ "${#failed[@]}" -gt 0 ]; then printf 'failed: %s\n' "${failed[*]}"; fi
 if [ "${#skipped[@]}" -gt 0 ]; then printf 'skipped a stage: %s\n' "${skipped[*]}"; fi
+# One machine-readable line naming which stages skipped. CI parses this to tell a
+# skip it could never satisfy from a check that silently did not run.
+if [ -s "$CE_SKIP_LEDGER" ]; then
+  printf 'SKIPPED_CODES: %s\n' "$(sort -u "$CE_SKIP_LEDGER" | tr '\n' ' ' | sed 's/ *$//')"
+fi
 case "$worst" in
   "$EXIT_PASS") printf 'result: pass\n' ;;
   "$EXIT_SKIPPED") printf 'result: pass, with a skipped stage (exit 3, not 0)\n' ;;

@@ -1,15 +1,26 @@
-# Probe form (U1). Its only job is to answer, at the first push, whether Actions
-# run on this repository at all and which of the pinned tools the runner already
-# has. U11 replaces this with the full job (tests/run.sh, shellcheck, the
-# generation freshness check, and openspec validate).
+# The gate (U1, extended). This job is a required status check on `main`, so it
+# is what stands between a pull request and the branch. U11 broadens what it runs
+# (shellcheck, the generation freshness check, openspec validate); this form
+# already runs the whole test suite rather than the baseline test alone, because
+# a required check that does not run a unit's own tests gates nothing.
 #
-# CI is advisory here: tests/run.sh is the gate. A skipped stage (exit 3) becomes
-# a warning annotation and the step still concludes green -- that is the plan's
-# decision, not an oversight, because the exact real-name list is git-ignored and
-# can never exist in a CI checkout. The consequence to know: a GitHub annotation
-# is not a status, so branch protection cannot see a skipped stage. Read the log,
-# and treat the maintainer's pre-push run (which does have the local list) as the
-# real screening gate.
+# The exit contract, and why exit 3 is not simply green:
+#
+#   0  pass
+#   1  a check failed
+#   2  usage or environment error
+#   3  every test that ran passed, but a stage was skipped
+#
+# Exit 3 is the interesting one. A skipped stage means a check did not run, and
+# treating that as green is how a gate quietly stops gating. But one skip is
+# structural and permanent: the exact real-name list lives in tests/local/, which
+# is git-ignored by design, so it can never exist in a CI checkout. Failing on it
+# would make this job permanently red; passing on every skip would let a real one
+# through. So tests/run.sh names each skipped stage with a code, and this job
+# accepts exactly the code CI could never satisfy and fails on any other.
+#
+# Adding a new skip therefore forces a decision here rather than inheriting a
+# pass, which is the point.
 name: check
 
 on:
@@ -21,6 +32,8 @@ permissions:
   contents: read
 
 jobs:
+  # Do not rename this job. Branch protection on `main` requires the status by
+  # its name, and a rename silently disables the required check.
   probe:
     name: Baseline probe
     runs-on: ubuntu-latest
@@ -40,14 +53,37 @@ jobs:
             fi
           done
 
-      - name: Repository baseline
+      - name: Gate
         run: |
+          # The skip codes CI can never satisfy, one per line. Everything else
+          # that skips is a check that did not run, and fails the job.
+          ALLOWED_SKIPS='REAL_NAMES_NOT_VALIDATED'
+
           set +e
-          bash tests/repo-baseline.test.sh
+          out="$(bash tests/run.sh 2>&1)"
           rc=$?
           set -e
+          printf '%s\n' "$out"
+
           case "$rc" in
-            0) echo "baseline: pass" ;;
-            3) echo "::warning title=Stage skipped::tests/repo-baseline.test.sh exited 3 - a stage was skipped because an optional tool is absent. Read the run log before treating this as green." ;;
-            *) echo "::error title=Baseline failed::tests/repo-baseline.test.sh exited $rc"; exit "$rc" ;;
+            0)
+              echo "gate: pass"
+              ;;
+            3)
+              codes="$(printf '%s\n' "$out" | sed -n 's/^SKIPPED_CODES: //p' | tr ' ' '\n' | sed '/^$/d' | sort -u)"
+              if [ -z "$codes" ]; then
+                echo "::error title=Gate failed::tests/run.sh exited 3 but named no skipped stage; the run cannot be classified"
+                exit 1
+              fi
+              unexpected="$(printf '%s\n' "$codes" | grep -vxF "$ALLOWED_SKIPS" || true)"
+              if [ -n "$unexpected" ]; then
+                echo "::error title=A check did not run::skipped stage(s) CI is expected to be able to run: $(printf '%s' "$unexpected" | tr '\n' ' ')"
+                exit 1
+              fi
+              echo "gate: pass, skipping only: $(printf '%s' "$codes" | tr '\n' ' ') (not satisfiable in a CI checkout)"
+              ;;
+            *)
+              echo "::error title=Gate failed::tests/run.sh exited $rc"
+              exit "$rc"
+              ;;
           esac
